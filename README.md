@@ -5,6 +5,8 @@ multi-dispositivo via Cloudflare (Pages + Functions + D1 + Worker de push).
 Feito para preparação ENEM/vestibular UFRGS, mas a arquitetura serve para qualquer
 painel pessoal de estudo.
 
+![Painel Horizonte — dashboard com trilha de arranque, métricas e mapa de domínio por disciplina](docs/screenshot.png)
+
 > Todos os nomes e dados pessoais foram substituídos por personagens fictícios
 > (**Alex**, o titular; **Bia**, a convidada). Os dados de provas são públicos (ENEM/UFRGS).
 
