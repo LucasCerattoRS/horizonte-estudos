@@ -1,0 +1,13 @@
+{
+  "name": "worker-push",
+  "private": true,
+  "type": "module",
+  "description": "Worker satélite (Cron Trigger 1x/dia) que avisa quem tem revisão SM-2 vencida. Ver docs/ATIVAR-PUSH.md.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@pushforge/builder": "^2.0.5"
+  }
+}

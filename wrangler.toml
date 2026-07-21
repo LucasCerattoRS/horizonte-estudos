@@ -1,0 +1,13 @@
+# wrangler.toml — binding do D1 para as Pages Functions (functions/).
+# Preencher database_id após `wrangler d1 create horizonte-db` (passo 0.1 do PLANO-V2.md).
+# Alternativa: configurar o binding no dashboard do projeto Pages (Settings → Functions → D1 bindings).
+# O binding DEVE ser feito nos DOIS projetos (painel-horizonte e horizonte-bia) se compartilharem o banco.
+
+name = "horizonte"
+pages_build_output_dir = "."   # o staging já é a raiz do deploy (painel/ + pesquisa/ + functions/)
+compatibility_date = "2026-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "horizonte-db"
+database_id = "SEU-DATABASE-ID-AQUI"

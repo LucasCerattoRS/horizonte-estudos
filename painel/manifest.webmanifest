@@ -1,0 +1,25 @@
+{
+  "name": "Horizonte Estudos — UFRGS & ENEM",
+  "short_name": "Horizonte Estudos",
+  "description": "Painel de estudos para a UFRGS e o ENEM: edital, questões oficiais, redação corrigida pela rubrica da banca e revisão espaçada.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "id": "horizonte-ufrgs-enem",
+  "display": "standalone",
+  "background_color": "#0c0f16",
+  "theme_color": "#0c0f16",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Foco da semana", "url": "./index.html#painel" },
+    { "name": "Banco de questões", "url": "./index.html#banco" },
+    { "name": "Redação", "url": "./index.html#redacao" },
+    { "name": "Revisões de hoje", "url": "./index.html#revisao" }
+  ]
+}

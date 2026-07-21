@@ -1,0 +1,27 @@
+# worker-push/wrangler.toml — Worker satélite SÓ para o Cron Trigger diário do push de
+# revisão SM-2. Por quê separado do Pages Functions (functions/, projeto "horizonte")?
+# Cloudflare Pages Functions NÃO suporta Cron Triggers (isso é recurso de Workers "puro").
+# Este worker roda sobre o MESMO D1 (mesmo database_id do wrangler.toml da raiz — D1 aceita
+# binding em vários projetos) mas é um deploy Cloudflare separado. Não tem rota HTTP de
+# verdade: o fetch() só existe porque `wrangler deploy` exige um handler; quem importa é o
+# scheduled(). Ver docs/ATIVAR-PUSH.md para o passo a passo completo de ativação.
+
+name = "horizonte-push"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "horizonte-db"
+database_id = "SEU-DATABASE-ID-AQUI"
+
+[triggers]
+# 12:00 UTC = 09:00 em Brasília (UTC-3, sem horário de verão desde 2019). Troque se quiser
+# outro horário — é só a hora que o Cron acorda o worker, não afeta o SM-2 em si.
+crons = ["0 12 * * *"]
+
+# --- Secrets/vars que NÃO vão pro Git (configurar via wrangler, ver docs/ATIVAR-PUSH.md) ---
+# wrangler secret put VAPID_PRIVATE_KEY --config worker-push/wrangler.toml
+#   -> cola o JSON da "Private Key (JWK)" que `npx @pushforge/builder vapid` imprimiu.
+# [vars]
+# VAPID_CONTACT = "seu-email@dominio.com"   # opcional; vira o "sub" do JWT VAPID (não te avisa nada)

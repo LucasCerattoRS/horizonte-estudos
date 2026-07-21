@@ -1,0 +1,1632 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Horizonte Estudos — UFRGS · ENEM</title>
+<!-- App instalável (PWA). Tudo com caminho RELATIVO: o mesmo arquivo serve em file://
+     (onde o manifest é ignorado e o SW nem registra) e em /painel/ no site publicado. -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0c0f16">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Horizonte Estudos">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<style>
+:root{
+  /* escada de elevação: cada camada é ~+4% de luz sobre a anterior (base→…→overlay).
+     overlay = diálogos/popover, o nível mais alto. Ver DESIGN-SYSTEM.md. */
+  --bg:#0c0f16; --surface:#141926; --raised:#1b2233; --raised2:#222b40; --overlay:#2c3448;
+  --border:#2a3550; --border-soft:#212a40;
+  /* corpo a ~90% de branco (não puro): mata o "halation" que borra texto claro no escuro */
+  --ink:#e2e6f0; --muted:#93a1bd; --faint:#63708c;
+  --azul:#4ea8de;        /* Guaíba — progresso/acento */
+  --azul-deep:#2f6690;
+  --sunset:#f2a154;      /* pôr do sol — assinatura */
+  --sunset-deep:#d97f43;
+  --verde:#3fb984;       /* dominado */
+  --amarelo:#e6b93f;     /* em progresso */
+  --cinza:#5b6884;       /* não iniciado */
+  --vermelho:#e2635a;
+  --r:14px; --r-sm:9px;
+  /* FAMÍLIAS — uma por Look, e todas de SISTEMA (zero download).
+     Webfont está proibida aqui: o painel tem de abrir offline e por file://, e um @font-face
+     de CDN quebraria os dois. Cada pilha lista Windows → Apple → Linux → genérica, então o
+     Look sobrevive a qualquer máquina (degradando, nunca quebrando).
+     Antes disto, 3 dos 4 Looks usavam a MESMA família (--sans) e só mudavam peso/tracking —
+     era a queixa do Alex ("os Looks parecem duplicados"). */
+  --mono:ui-monospace,"Cascadia Mono",Consolas,"JetBrains Mono","Fira Code",monospace;
+  --serif:"Sitka Text",Charter,"Iowan Old Style","Noto Serif",Constantia,Cambria,Georgia,serif;
+  --sans:"Inter",system-ui,"Segoe UI","Cantarell",Roboto,"Helvetica Neue",sans-serif;
+  --rounded:ui-rounded,"SF Pro Rounded",Candara,Corbel,"Cantarell",Ubuntu,system-ui,sans-serif;
+  --display:Bahnschrift,"Archivo Black","Franklin Gothic Medium","Liberation Sans Narrow",system-ui,sans-serif;
+  --grad:linear-gradient(120deg,#2f6690,#d97f43);   /* assinatura p/ CTAs (sobretudo no tema gradiente) */
+  /* --- TOKENS DE ESTILO (eixo data-style; valor = literário/padrão) ---
+     Cor fica acima (data-theme); aqui é só FORMA. Ver DESIGN-SYSTEM.md. */
+  --font-title:var(--serif); --font-body:var(--sans); --lh-body:1.58;
+  --fw-title:600; --ls-title:.2px; --title-transform:none;
+  --radius:16px; --radius-sm:10px; --nav-radius:99px;
+  --card-bd:1px solid var(--border-soft);
+  --card-shadow:0 2px 10px rgba(0,0,0,.22);
+  --motion:.28s; --eyebrow-ls:3px;
+  /* escala de tipo (razão ~1.25) — macro-tipografia do Hero (Fase 2, RELATORIO §Tokens).
+     --text-hero é fluido (clamp) e cada Look pode reescrevê-lo (mantém a distinção de forma). */
+  --text-xs:11px; --text-sm:12.5px; --text-base:15px; --text-lg:18px;
+  --text-xl:21px; --text-2xl:26px; --text-3xl:32px; --text-hero:clamp(1.9rem,3.4vw,2.7rem);
+  /* escala de espaço (4/8/12/16/24/32/48) — um passo por vez, sem números soltos */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px;
+  --side-w:236px;   /* it.10: largura da barra lateral do dashboard (só desktop ≥901px) */
+}
+/* ============================================================
+   TEMAS — escuro (padrão, acima) · claro · gradiente
+   Cada tema só reescreve as VARIÁVEIS + os poucos fundos que eram
+   hardcoded (body, header, hero, backdrop). Todo componente herda
+   das vars, então a troca vale para o painel inteiro de graça.
+   O <script> no <head> aplica o tema salvo ANTES do paint (sem flash).
+   ============================================================ */
+/* GUAÍBA — "pôr do sol no Guaíba": base azul-marinho (a água) com o âmbar
+   como acento RARO (o sol). Variante escura FRIA, nativa do Look Linear.
+   Paleta do RELATORIO-DESIGN.md (§5): hue ~215°, ink 90/64/44, hairline inset. */
+:root[data-theme="guaiba"]{
+  --bg:#070f1e; --surface:#0e1a33; --raised:#16284b; --raised2:#1d3159; --overlay:#213a6e;
+  --border:rgba(255,255,255,.10); --border-soft:rgba(255,255,255,.06);
+  --ink:rgba(255,255,255,.90); --muted:rgba(255,255,255,.64); --faint:rgba(255,255,255,.44);
+  --azul:#5aa2e0; --azul-deep:#2f6690;
+  --sunset:#f06529; --sunset-deep:#e85b20;   /* âmbar flamejante (§5 do relatório) */
+  --card-shadow:inset 0 0 0 1px rgba(255,255,255,.06),0 8px 24px -6px rgba(3,8,20,.6);
+}
+:root[data-theme="guaiba"] header.top{background:rgba(7,15,30,.82)}
+:root[data-theme="guaiba"] .hero{background:linear-gradient(180deg,#0e1a33,#070f1e)}
+:root[data-theme="guaiba"] dialog::backdrop{background:rgba(4,9,20,.72)}
+:root[data-theme="claro"]{
+  --bg:#eef1f8; --surface:#ffffff; --raised:#f1f4fa; --raised2:#e6ebf5; --overlay:#ffffff;
+  --border:#cfd8e8; --border-soft:#e2e8f2;
+  --ink:#1a2231; --muted:#53607a; --faint:#8791a6;
+  --azul:#2f7fc0; --azul-deep:#255f92;
+  --sunset:#d9772f; --sunset-deep:#bd6222;
+  --verde:#2e9f6e; --amarelo:#bf8e16; --cinza:#8592ab; --vermelho:#d5504a;
+  --grad:linear-gradient(120deg,#3f8fd0,#e58a3c);
+}
+:root[data-theme="claro"] body{
+  background-image:radial-gradient(1100px 560px at 80% -10%, rgba(217,119,47,.10), transparent 60%),
+                   radial-gradient(820px 460px at 10% 0%, rgba(47,127,192,.10), transparent 55%);
+}
+:root[data-theme="claro"] header.top{background:rgba(255,255,255,.82)}
+:root[data-theme="claro"] .hero{background:linear-gradient(180deg,#ffffff,#eef2fa)}
+:root[data-theme="claro"] .nav button.on{color:#2a1c07}
+:root[data-theme="claro"] dialog::backdrop{background:rgba(30,40,60,.35)}
+:root[data-theme="claro"] ::selection{background:rgba(217,119,47,.22)}
+
+:root[data-theme="gradiente"]{
+  --bg:#0a0e24; --surface:#141a35; --raised:#1e2650; --raised2:#28315f; --overlay:#333d70;
+  --border:#34407e; --border-soft:#28315f;
+  --ink:#e3e6f3; --muted:#a6b0d6; --faint:#717ca8;
+  --azul:#5b8def; --azul-deep:#3a5fc0;
+  --sunset:#f6a24e; --sunset-deep:#e07f3c;
+  --verde:#40c58c; --amarelo:#ecc04a; --cinza:#5f6b96; --vermelho:#ef6a63;
+  --grad:linear-gradient(120deg,#6d5efc,#b455e8 48%,#f2884e);
+}
+:root[data-theme="gradiente"] body{
+  background-image:radial-gradient(1200px 620px at 82% -8%, rgba(180,85,232,.18), transparent 60%),
+                   radial-gradient(1000px 560px at 8% -4%, rgba(109,94,252,.16), transparent 58%),
+                   radial-gradient(900px 520px at 60% 108%, rgba(242,136,78,.10), transparent 60%);
+}
+:root[data-theme="gradiente"] header.top{background:rgba(10,12,32,.82)}
+:root[data-theme="gradiente"] .hero{background:linear-gradient(135deg,#1a1b4b,#2a1c52 55%,#3a2140)}
+:root[data-theme="gradiente"] .btn.primary{background:var(--grad);color:#fff;border:none}
+:root[data-theme="gradiente"] .btn.primary:hover{filter:brightness(1.08)}
+:root[data-theme="gradiente"] .nav button.on{background:var(--grad);color:#fff}
+:root[data-theme="gradiente"] #botNav button.on{color:#c39bff}
+
+/* ============================================================
+   LOOKS (eixo data-style) — 4 referências nomeadas. Só FORMA, nunca cor
+   (a cor entra pelo tema NATIVO de cada Look, aplicado junto no JS).
+   O :root já traz a LITERÁRIA (padrão/revista literária). Ver DESIGN-SYSTEM.md.
+   v1 — a fidelidade fina (o que faz "Linear ser Linear") virá do Deep Research.
+   ============================================================ */
+
+/* LINEAR — técnico/DENSO: sans apertada, hairline, cantos retos, abas quadradas, movimento seco.
+   Assinatura de forma: densidade (entrelinha curta) + versalete mono minúsculo (rótulo de engenharia). */
+:root[data-style="linear"]{
+  --font-title:var(--sans);          /* grotesca neutra: a precisão do Linear é NÃO ter voz */
+  --fw-title:600; --ls-title:-.4px; --eyebrow-ls:.8px;
+  --lh-body:1.45; --radius:6px; --radius-sm:5px; --nav-radius:6px; --text-hero:clamp(1.7rem,3vw,2.2rem);
+  /* hairline inset = a "placa de vidro" do Linear (relatório §2), lida sobre a navy Guaíba */
+  --card-bd:1px solid var(--border-soft); --card-shadow:inset 0 0 0 1px rgba(255,255,255,.05),0 1px 2px rgba(0,0,0,.4);
+  --motion:.13s;
+}
+:root[data-style="linear"] .hero h1{letter-spacing:-.6px}
+:root[data-style="linear"] h2.section{font-size:21px}
+:root[data-style="linear"] .eyebrow{font-family:var(--mono);text-transform:uppercase;font-size:9.5px;letter-spacing:.8px;color:var(--faint)}
+
+/* ATELIÊ — Things 3 / Apple: sereno, AREJADO, LEVE. Título fino (500), sem borda (separa por
+   espaço), entrelinha generosa, eyebrow em caixa-baixa gentil. */
+:root[data-style="atelie"]{
+  /* humanista de traço macio (Candara no Windows, SF Rounded na Apple, Cantarell no Linux):
+     é a fonte que carrega o "sereno" — e aqui ela vale também no CORPO, não só no título. */
+  --font-title:var(--rounded); --font-body:var(--rounded);
+  --fw-title:500; --ls-title:-.2px; --eyebrow-ls:.4px;
+  --lh-body:1.68; --radius:16px; --radius-sm:11px; --nav-radius:99px;
+  --card-bd:1px solid transparent;               /* separa por espaço, não por borda */
+  --card-shadow:0 1px 3px rgba(15,23,42,.06); --motion:.3s;
+}
+:root[data-style="atelie"] .hero h1{letter-spacing:-.3px}
+:root[data-style="atelie"] h2.section{font-size:24px}
+:root[data-style="atelie"] .eyebrow{font-family:var(--rounded);text-transform:none;font-weight:500;font-size:11.5px;letter-spacing:.3px;color:var(--faint)}
+:root[data-style="atelie"] .card{padding:22px}
+:root[data-style="atelie"] .home-discs{gap:16px}
+
+/* AURORA — Arc / Vercel: moderno, OUSADO. Display pesadíssimo (800), escala grande, sombra
+   profunda, eyebrow versalete forte, movimento elástico. */
+:root[data-style="aurora"]{
+  /* display de verdade (Bahnschrift/DIN no Windows, Archivo Black, Franklin Gothic):
+     estreita e pesada — o Hero macro vira cartaz, que é o ponto do Aurora. */
+  --font-title:var(--display); --fw-title:800; --ls-title:-.8px; --eyebrow-ls:1.8px;
+  --lh-body:1.52; --radius:18px; --radius-sm:13px; --nav-radius:99px; --text-hero:clamp(2.15rem,3.9vw,3rem);
+  --card-bd:1px solid var(--border-soft); --card-shadow:0 10px 34px rgba(0,0,0,.34);
+  --motion:.42s;
+}
+:root[data-style="aurora"] .hero h1{letter-spacing:-1px;line-height:1.05}
+:root[data-style="aurora"] h2.section{font-size:28px}
+:root[data-style="aurora"] .eyebrow{font-family:var(--sans);text-transform:uppercase;font-weight:700;font-size:10.5px;letter-spacing:1.8px}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+html,body{overflow-x:hidden;max-width:100%}
+img{max-width:100%;height:auto}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:var(--lh-body);
+  -webkit-font-smoothing:antialiased;font-size:15px;
+  background-image:radial-gradient(1200px 600px at 78% -8%, rgba(242,161,84,.10), transparent 60%),
+                   radial-gradient(900px 500px at 12% 0%, rgba(78,168,222,.09), transparent 55%);
+  background-attachment:fixed;}
+/* font-variant-numeric:inherit — form controls NÃO herdam variante numérica do body por
+   padrão (UA stylesheet), então o lining-nums do Ateliê não chegava nos cards que são
+   <button> (ex.: os de disciplina, ".hd"), e o "0/13" saía com zero de estilo antigo. */
+button{font-family:inherit;font-variant-numeric:inherit;color:inherit;cursor:pointer;border:none;background:none}
+input,select,textarea{font-family:inherit;font-size:inherit;font-variant-numeric:inherit;color:var(--ink)}
+/* fundo escuro padrão p/ qualquer select (evita select "lavado" fora de .toolbar, ex. Análise) */
+select{background:var(--raised);border:1px solid var(--border);border-radius:8px;padding:6px 9px}
+select option{background:var(--surface);color:var(--ink)}
+::selection{background:rgba(242,161,84,.28)}
+.mono{font-family:var(--mono)}
+
+/* ---------- Layout ---------- */
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+header.top{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);
+  background:rgba(12,15,22,.82);border-bottom:1px solid var(--border-soft)}
+.top-in{display:flex;align-items:center;gap:18px;padding:12px 20px;max-width:1180px;margin:0 auto;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px;font-family:var(--font-title)}
+.brand .h{font-size:20px;font-weight:var(--fw-title);letter-spacing:var(--ls-title)}
+.brand .sub{font-family:var(--mono);font-size:10.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--faint)}
+.nav{display:flex;gap:2px;margin-left:auto;flex-wrap:wrap}
+.nav button{padding:7px 13px;border-radius:var(--nav-radius);font-size:13.5px;font-weight:500;color:var(--muted);
+  transition:.15s;white-space:nowrap}
+.nav button:hover{color:var(--ink);background:var(--raised)}
+.nav button.on{color:var(--bg);background:var(--sunset);font-weight:600}
+.course-pick{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted)}
+.course-pick select{background:var(--raised);border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:12.5px}
+.profile-pick{display:flex;align-items:center;gap:4px}
+.profile-pick select{background:var(--raised);border:1px solid var(--border);border-radius:8px;padding:5px 9px;font-size:12.5px;font-weight:600;color:var(--ink)}
+.profile-pick .pbtn{width:28px;height:28px;border-radius:8px;background:var(--raised);border:1px solid var(--border);color:var(--muted);font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center}
+.profile-pick .pbtn:hover{color:var(--ink);border-color:var(--azul)}
+/* Seletor de tema (segmentado) — preferência POR APARELHO (não sincroniza) */
+.pick-lb{display:none}   /* rótulo "estilo"/"tema": só aparece na barra lateral do desktop */
+.theme-pick{display:flex;gap:2px;background:var(--raised);border:1px solid var(--border);border-radius:99px;padding:2px}
+.theme-pick button{width:30px;height:26px;border-radius:99px;font-size:13px;line-height:1;color:var(--faint);display:flex;align-items:center;justify-content:center;transition:.15s}
+.theme-pick button:hover{color:var(--ink)}
+.theme-pick button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.28)}
+/* Seletor de ESTILO (design) — mesmo padrão do de tema, eixo separado */
+.style-pick{display:flex;gap:2px;background:var(--raised);border:1px solid var(--border);border-radius:99px;padding:2px}
+.style-pick button{width:30px;height:26px;border-radius:99px;font-size:13px;line-height:1;color:var(--faint);display:flex;align-items:center;justify-content:center;transition:.15s}
+.style-pick button:hover{color:var(--ink)}
+.style-pick button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.28)}
+/* Seletor de POSIÇÃO DA NAV (eixo data-nav) — 3º eixo, mesmo padrão dos de cima.
+   display:none por padrão: SÓ aparece no desktop (a it.10 o liga). No celular a nav é
+   sempre a barra inferior, então moldar a posição não faz sentido lá. Ver DESIGN-SYSTEM.md. */
+.nav-pick{display:none;gap:2px;background:var(--raised);border:1px solid var(--border);border-radius:99px;padding:2px}
+.nav-pick button{width:30px;height:26px;border-radius:99px;font-size:14px;line-height:1;color:var(--faint);display:flex;align-items:center;justify-content:center;transition:.15s}
+.nav-pick button:hover{color:var(--ink)}
+.nav-pick button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.28)}
+/* Transição de aparência (troca de Look/tema): um "pôr-do-sol" cobre a tela por ~450ms
+   e o swap acontece no pico, escondendo o reflow. Respeita prefers-reduced-motion (JS pula). */
+#fxWipe{position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:0;
+  transition:opacity .2s ease;
+  background:radial-gradient(60% 55% at 50% 62%, rgba(242,161,84,.18), transparent 70%), var(--bg)}
+#fxWipe.on{opacity:1}
+#fxWipe::after{content:"";position:absolute;left:50%;top:52%;width:76px;height:76px;
+  transform:translate(-50%,-50%) scale(.85);border-radius:50%;opacity:0;
+  background:radial-gradient(circle,#ffe0a8,#f2a154 55%,transparent 72%);
+  transition:opacity .22s ease, transform .45s cubic-bezier(.2,.7,.2,1)}
+#fxWipe.on::after{opacity:.95;transform:translate(-50%,-50%) scale(1.08)}
+@media(prefers-reduced-motion:reduce){#fxWipe{display:none}}
+
+main{padding:26px 0 90px}
+.tab{display:none;animation:fade .3s ease}
+.tab.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+h2.section{font-family:var(--font-title);font-size:var(--text-2xl);font-weight:var(--fw-title);letter-spacing:var(--ls-title);text-transform:var(--title-transform);margin-bottom:4px}
+.section-sub{color:var(--muted);font-size:14px;margin-bottom:22px;max-width:70ch}
+/* eyebrow = rótulo QUIETO (mono cinza). Antes era laranja em toda seção — o âmbar
+   virou raro (só CTA, o número-herói do hero e a aba ativa). Ver DESIGN-SYSTEM.md. */
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:var(--eyebrow-ls);text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+
+/* ---------- Cards ---------- */
+.card{background:var(--surface);border:var(--card-bd);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:18px}
+.grid{display:grid;gap:16px}
+.two-col{grid-template-columns:1fr 1fr}
+/* Painel: Foco (denso) manda; Estratégia vira barra lateral secundária que NÃO
+   estica pra igualar a altura (fim do card vazio) e acompanha a leitura (sticky). */
+#painelBottom{align-items:start;gap:20px}
+#painelBottom > .card:last-child{background:var(--raised)}
+@media(min-width:821px){
+  #painelBottom{grid-template-columns:1.4fr 1fr}
+  #painelBottom > .card:last-child{position:sticky;top:78px}
+}
+
+/* ---------- HERO / horizonte ---------- */
+.hero{position:relative;border:var(--card-bd);border-radius:var(--radius);overflow:hidden;box-shadow:var(--card-shadow);
+  background:linear-gradient(180deg,#0e1420,#0c1018);margin-bottom:26px}
+.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:0}
+.hero-left{padding:30px 30px 26px}
+.hero-right{position:relative;min-height:230px;border-left:1px solid var(--border-soft)}
+.hero h1{font-family:var(--font-title);font-size:var(--text-hero);font-weight:var(--fw-title);letter-spacing:var(--ls-title);text-transform:var(--title-transform);line-height:1.12;margin-bottom:8px}
+.hero .lede{color:var(--muted);font-size:14.5px;max-width:44ch;margin-bottom:20px}
+.hero-stats{display:flex;gap:26px;flex-wrap:wrap}
+.hstat .n{font-family:var(--mono);font-size:30px;font-weight:600;letter-spacing:-1px;line-height:1}
+.hstat .l{font-size:11.5px;color:var(--faint);text-transform:uppercase;letter-spacing:1px;margin-top:5px}
+.hstat .n.sun{color:var(--sunset)} .hstat .n.blu{color:var(--azul)} .hstat .n.grn{color:var(--verde)}
+#horizonte{position:absolute;inset:0;width:100%;height:100%}
+/* O % vive como OVERLAY em HTML, não como <text> no SVG: o preserveAspectRatio
+   "slice" recorta o topo/base do SVG em telas baixas (celular), e o texto ficava
+   cortado ao meio. Fora do sistema de coordenadas do SVG, nunca é recortado. */
+.hero-pct{position:absolute;top:10px;right:12px;z-index:2;font-family:var(--mono);font-size:12px;
+  color:#ffe6c2;background:rgba(10,14,26,.42);border:1px solid rgba(255,255,255,.14);
+  border-radius:99px;padding:3px 10px;letter-spacing:.3px;pointer-events:none}
+.hero-cta{margin-top:22px;display:flex;gap:10px;flex-wrap:wrap}
+/* barra de sol: linha-horizonte sob o CTA (RELATORIO §Hero) — o pôr-do-sol como sistema, não enfeite */
+.sun-bar{height:2px;margin-top:22px;border-radius:2px;background:linear-gradient(to right,transparent,var(--sunset),transparent);opacity:.6}
+/* it.10 — chip da fase macro no Hero (liga o Painel ao Cronograma de 16 meses; neutro, a cor vem do ícone) */
+.fase-chip{display:inline-flex;align-items:center;gap:7px;background:var(--raised);border:1px solid var(--border-soft);border-radius:99px;padding:5px 12px 5px 10px;font-size:12px;color:var(--muted);margin-bottom:14px;transition:var(--motion);white-space:nowrap}
+.fase-chip:hover{border-color:var(--azul);color:var(--ink)}
+.fase-chip b{color:var(--ink);font-weight:600}
+.fase-chip .fc-ic{font-size:14px;line-height:1}
+.fase-chip:active{transform:scale(.97)}
+.btn{padding:9px 15px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:600;transition:var(--motion);border:1px solid transparent}
+.btn.primary{background:var(--sunset);color:#1a1206}
+.btn.primary:hover{background:var(--sunset-deep)}
+.btn.on{background:var(--surface);border-color:var(--azul);color:var(--azul)}
+.btn.ghost{border-color:var(--border);color:var(--muted)}
+.btn.ghost:hover{border-color:var(--azul);color:var(--ink)}
+/* press físico (Things 3): o toque afunda levemente o alvo */
+.btn:active{transform:scale(.97)}
+
+/* ---------- Discipline / edital ---------- */
+.disc-grid{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+.disc{background:var(--surface);border:var(--card-bd);border-radius:var(--radius);box-shadow:var(--card-shadow);overflow:hidden;
+  transition:var(--motion);display:flex;flex-direction:column}
+.disc:hover{border-color:var(--border)}
+/* fechado = card compacto; sem isso o grid estica os cards fechados até a altura
+   do aberto e eles viram caixas vazias gigantes (bug do print 2026-07-12) */
+.disc{align-self:start}
+.disc-h{display:flex;align-items:center;gap:11px;padding:15px 16px 13px;cursor:pointer}
+.disc-h .chev{color:var(--faint);font-size:11px;transition:transform .18s;flex-shrink:0}
+.disc.open .chev{transform:rotate(90deg)}
+.disc-h .ic{font-size:20px;width:34px;height:34px;display:grid;place-items:center;background:var(--raised);border-radius:9px;flex-shrink:0}
+.disc-h .nm{font-weight:600;font-size:15.5px}
+.disc-h .pct{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--muted)}
+.disc-h .wt{font-family:var(--mono);font-size:10px;color:var(--faint);border:1px solid var(--border);border-radius:5px;padding:1px 5px;margin-left:8px}
+.disc-bar{height:5px;background:var(--raised);position:relative;overflow:hidden}
+.disc-bar > i{position:absolute;inset:0 auto 0 0;display:block;transition:width .5s}
+.disc-body{display:none;padding:4px 12px 12px;border-top:1px solid var(--border-soft)}
+.disc.open .disc-body{display:block}
+.disc.open .disc-h{background:var(--raised)}
+.eixo{margin-top:10px}
+.eixo-nm{font-family:var(--mono);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin:6px 4px 4px}
+.topic{display:flex;align-items:flex-start;gap:9px;padding:7px 8px;border-radius:8px;transition:.12s}
+.topic:hover{background:var(--raised)}
+.dot{width:15px;height:15px;border-radius:50%;flex-shrink:0;margin-top:3px;cursor:pointer;border:2px solid var(--cinza);transition:.15s;background:transparent}
+.dot.s1{border-color:var(--amarelo);background:var(--amarelo)}
+.dot.s2{border-color:var(--verde);background:var(--verde)}
+.topic .tx{flex:1;min-width:0}
+.topic .tn{font-size:13.5px;font-weight:500;cursor:pointer}
+.topic.s2 .tn{color:var(--muted)}
+.topic .tsub{font-size:11.5px;color:var(--faint);display:none;margin-top:3px;line-height:1.45}
+.topic.exp .tsub{display:block}
+.topic .obs{opacity:0;font-size:11px;color:var(--azul);border:1px solid var(--border);border-radius:6px;padding:2px 6px;transition:.12s;white-space:nowrap;align-self:center}
+.topic:hover .obs{opacity:1}
+.topic .obs.has{opacity:1;color:var(--azul);border-color:var(--azul-deep)}
+/* no toque não existe :hover — sem isto os botões do tópico ficam invisíveis no celular */
+@media(hover:none){.topic .obs{opacity:1}}
+/* quantas questões oficiais já caíram deste tópico → clique abre o banco filtrado */
+.topic .qbadge{font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--raised);border:1px solid var(--border);border-radius:99px;padding:2px 7px;align-self:center;flex-shrink:0;white-space:nowrap;cursor:pointer;transition:.12s}
+.topic .qbadge:hover{color:var(--azul);border-color:var(--azul-deep)}
+/* quando você já respondeu questões do tópico, o contador vira o SEU acerto */
+.topic .qbadge.a-bom{color:var(--verde);border-color:#2f5a48}
+.topic .qbadge.a-med{color:var(--amarelo);border-color:#5a4a2f}
+.topic .qbadge.a-ruim{color:var(--vermelho);border-color:#5a3030}
+/* chegando de uma questão: pisca a linha do tópico p/ o olho achá-la */
+.topic.flash{animation:tflash 2.2s ease}
+@keyframes tflash{0%,65%{background:var(--raised);box-shadow:inset 0 0 0 2px var(--sunset)}100%{background:transparent;box-shadow:none}}
+
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:14px 2px 20px}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:50%;border:2px solid var(--cinza)}
+.legend i.a{border-color:var(--amarelo);background:var(--amarelo)} .legend i.v{border-color:var(--verde);background:var(--verde)}
+
+/* ---------- Cronograma / SRS ---------- */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.due-item{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border-soft);border-radius:10px;background:var(--raised);margin-bottom:9px}
+.due-item .ic{font-size:16px}
+.due-item .info{flex:1;min-width:0}
+.due-item .info .t{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.due-item .info .m{font-size:11px;color:var(--faint)}
+.due-item .qlink{background:none;border:none;padding:0;font-size:11px;color:var(--azul);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.due-item .qlink:hover{color:var(--azul)}
+.srs-btns{display:flex;gap:5px}
+.srs-btns button{padding:5px 9px;border-radius:7px;font-size:11.5px;font-weight:600;border:1px solid var(--border)}
+.srs-btns .b0{color:var(--vermelho);border-color:#5a3030}.srs-btns .b0:hover{background:#3a2020}
+.srs-btns .b1{color:var(--amarelo);border-color:#5a5030}.srs-btns .b1:hover{background:#3a3520}
+.srs-btns .b2{color:var(--azul);border-color:#2f4a66}.srs-btns .b2:hover{background:#1f3550}
+.srs-btns .b3{color:var(--verde);border-color:#2f5a48}.srs-btns .b3:hover{background:#1f3a30}
+.empty{text-align:center;padding:30px 16px;color:var(--faint);font-size:13.5px}
+
+.log-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.log-form select,.log-form input{background:var(--raised);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px}
+.log-form input[type=number]{width:78px}
+.week{display:flex;gap:5px;margin-top:12px}
+.week .d{flex:1;text-align:center}
+.week .bar{height:60px;background:var(--raised);border-radius:6px;position:relative;overflow:hidden;display:flex;align-items:flex-end}
+.week .bar > i{width:100%;background:linear-gradient(180deg,var(--azul),var(--azul-deep));display:block;transition:height .4s}
+.week .lb{font-size:10px;color:var(--faint);margin-top:4px}
+.week .vv{font-size:10px;color:var(--muted);font-family:var(--mono)}
+
+/* ---------- Fase macro (cronograma de 16 meses) ---------- */
+.fase-macro .fase-trilha{display:flex;align-items:stretch;gap:6px;margin-top:12px}
+.fase-seg{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;padding:9px 8px;border:1px solid var(--border-soft);border-radius:10px;background:var(--raised);opacity:.62;transition:opacity .3s}
+.fase-seg.on{opacity:1;border-color:var(--sunset);background:color-mix(in srgb,var(--sunset) 12%,var(--raised))}
+.fase-ic{font-size:16px;line-height:1}
+.fase-nm{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fase-seg.on .fase-nm{color:var(--sunset)}
+.fase-jn{font-size:10.5px;color:var(--faint);font-family:var(--mono)}
+.fase-arw{align-self:center;color:var(--faint);font-size:15px;flex:0 0 auto}
+.fase-barra{height:6px;border-radius:4px;background:var(--raised);overflow:hidden;margin:12px 0 8px}
+.fase-barra > i{display:block;height:100%;background:linear-gradient(90deg,var(--sunset-deep),var(--sunset));transition:width .5s}
+.fase-meta{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:var(--muted)}
+.fase-meta b{color:var(--ink);font-family:var(--mono)}
+.fase-nota{font-size:11px;color:var(--faint);margin-top:6px;line-height:1.45}
+.fase-agora{margin-top:12px;padding-top:12px;border-top:1px solid var(--border-soft)}
+.fase-agora-h{font-family:var(--serif);font-size:15.5px;font-weight:600}
+.fase-agora-r{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.5}
+.fase-prio{margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.65}
+.fase-prio li{margin-bottom:2px}
+
+/* ---------- Métricas ---------- */
+.kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.kpi{background:var(--surface);border:var(--card-bd);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:16px}
+.kpi .n{font-family:var(--mono);font-size:27px;font-weight:600;letter-spacing:-.5px}
+.kpi .l{font-size:11.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.6px;margin-top:3px}
+.kpi .sub{font-size:11.5px;color:var(--muted);margin-top:6px}
+/* O SVG tem min-width (520–560px) e o .chart-wrap rola. Mas item de GRID nasce com
+   min-width:auto e se recusa a encolher abaixo do conteúdo — o card esticava e vazava
+   a tela no celular em vez de deixar o gráfico rolar dentro dele. */
+.chart-wrap{overflow-x:auto;min-width:0}
+.split-red>*,.two-col>*,.grid>*{min-width:0}
+
+/* ---------- Simulador ---------- */
+.sim-grid{display:grid;grid-template-columns:1fr 320px;gap:18px}
+.sim-row{display:grid;grid-template-columns:150px 1fr 52px 44px;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-soft)}
+.sim-row .pn{font-size:13px;font-weight:500}
+.sim-row input[type=range]{width:100%;accent-color:var(--azul)}
+.sim-row .ep{font-family:var(--mono);font-size:13px;text-align:right;color:var(--muted)}
+.sim-row .pw{font-family:var(--mono);font-size:11px;text-align:center;color:var(--azul);border:1px solid var(--border);border-radius:5px;padding:1px 0}
+.sim-out{background:linear-gradient(180deg,var(--raised),var(--surface));border:1px solid var(--border);border-radius:14px;padding:20px;height:fit-content;position:sticky;top:76px}
+.sim-out .big{font-family:var(--mono);font-size:44px;font-weight:700;letter-spacing:-2px;color:var(--sunset);line-height:1}
+.sim-out .warn{font-size:12px;color:var(--vermelho);margin-top:10px;display:none}
+.sim-out .warn.on{display:block}
+
+/* ---------- Banco de questões ---------- */
+.q-item{border:var(--card-bd);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:13px 14px;margin-bottom:10px;background:var(--surface)}
+.q-meta{display:flex;gap:8px;align-items:center;font-size:11px;color:var(--faint);margin-bottom:7px;flex-wrap:wrap}
+.tag{font-family:var(--mono);font-size:10px;background:var(--raised);border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--muted)}
+/* tópico do edital na questão: é um link p/ o Mapa (o assunto, em laranja, é texto da extração) */
+.tag.tlink{cursor:pointer;color:var(--azul);transition:.12s}
+.tag.tlink:hover{border-color:var(--azul);color:var(--ink)}
+.q-en{font-size:13.5px;margin-bottom:8px;white-space:pre-wrap}
+.q-ans{font-size:12.5px;color:var(--verde);display:none;padding:8px 10px;background:var(--raised);border-radius:8px;margin-bottom:8px;white-space:pre-wrap}
+.q-item.rev .q-ans{display:block}
+.q-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.acc{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto}
+
+/* ---------- Banco navegável (questões oficiais) ---------- */
+.bq{border:var(--card-bd);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:14px 15px;margin-bottom:12px;background:var(--surface)}
+.bq .q-meta{margin-bottom:9px}
+.bq .fig{color:var(--muted);border-color:var(--border)}
+.bq .ctx{font-size:12.5px;color:var(--faint);font-style:italic;line-height:1.5;margin-bottom:8px;padding-left:10px;border-left:2px solid var(--border)}
+/* Figura descrita: a imagem original vive no PDF; o extrator capturou os DADOS dela
+   (valores de gráfico/tabela, cena da foto). Moldura tracejada = convenção de placeholder. */
+.bq .bq-fig{margin-bottom:11px;padding:11px 13px;background:var(--raised);border:1px dashed var(--azul-deep);border-left-width:3px;border-radius:var(--radius-sm)}
+.bq .bq-fig figcaption{font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--azul);margin-bottom:5px;display:flex;flex-wrap:wrap;gap:4px;align-items:baseline}
+.bq .bq-fig figcaption span{color:var(--faint);text-transform:none;letter-spacing:.2px;font-size:9.5px}
+.bq .bq-fig-tx{font-size:13px;line-height:1.55;color:var(--ink)}
+.bq .en{font-size:14px;line-height:1.55;margin-bottom:11px;white-space:pre-wrap}
+.bq .alts{display:flex;flex-direction:column;gap:6px;margin-bottom:11px}
+.bq .alt{display:flex;gap:9px;align-items:flex-start;text-align:left;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--raised);font-size:13px;line-height:1.45;transition:var(--motion);width:100%}
+.bq .alt:hover:not(:disabled){border-color:var(--azul);color:var(--ink)}
+.bq .alt .L{font-family:var(--mono);font-weight:700;color:var(--muted);flex-shrink:0}
+.bq .alt.ok{background:rgba(63,185,132,.14);border-color:var(--verde)}
+.bq .alt.ok .L{color:var(--verde)}
+.bq .alt.bad{background:rgba(226,99,90,.13);border-color:var(--vermelho)}
+.bq .alt.bad .L{color:var(--vermelho)}
+.bq .alt.gab{border-color:var(--verde)}.bq .alt.gab .L{color:var(--verde)}
+.bq .alt:disabled{cursor:default}
+.bq .veredito{font-size:12.5px;font-weight:600;margin-bottom:10px}
+.bq .veredito.acertou{color:var(--verde)} .bq .veredito.errou{color:var(--vermelho)}
+.bq-links{display:flex;gap:7px;flex-wrap:wrap;border-top:1px solid var(--border-soft);padding-top:10px}
+.bq-links a,.bq-links button{font-size:12px;padding:6px 11px;border-radius:99px;border:1px solid var(--border);color:var(--muted);background:none;display:inline-flex;align-items:center;gap:5px;transition:.12s;white-space:nowrap}
+.bq-links a:hover,.bq-links button:hover{color:var(--ink);border-color:var(--azul);text-decoration:none}
+.bq-links .gem:hover{border-color:var(--azul);color:var(--azul)}
+/* filtro que veio de outra aba (tópico do edital / questão de uma prova) */
+#bqEspBox{display:inline-flex;align-items:center;gap:7px;color:var(--azul);border-color:var(--azul-deep)}
+#bqEspBox button{border:none;background:none;color:var(--muted);font-size:13px;line-height:1;padding:0 2px;cursor:pointer}
+#bqEspBox button:hover{color:var(--ink)}
+/* Análise: a linha do tópico é um atalho p/ as questões dele */
+.an-row{display:grid;grid-template-columns:minmax(180px,2fr) 5fr auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border-soft)}
+.an-row[data-tid]{cursor:pointer}
+.an-row[data-tid]:hover{background:var(--raised)}
+.an-row.an-alvo{background:linear-gradient(90deg,rgba(224,122,63,.10),transparent 60%);box-shadow:inset 3px 0 0 var(--sunset)}
+.an-num{font-family:var(--mono);font-size:13px;color:var(--muted);text-align:right;min-width:132px;display:flex;gap:7px;align-items:center;justify-content:flex-end}
+.an-acc{font-family:var(--mono);font-size:11px;color:var(--faint);background:var(--raised);border:1px solid var(--border);border-radius:99px;padding:2px 7px;white-space:nowrap}
+.an-acc.a-bom{color:var(--verde);border-color:#2f5a48}
+.an-acc.a-med{color:var(--amarelo);border-color:#5a4a2f}
+.an-acc.a-ruim{color:var(--vermelho);border-color:#5a3030}
+.an-go{color:var(--azul);margin-left:6px;opacity:.55}
+.an-row[data-tid]:hover .an-go{opacity:1}
+
+/* ---------- misc ---------- */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.toolbar input,.toolbar select{background:var(--raised);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px}
+/* o checkbox não é campo de texto: não herda o padding/estica da toolbar (era 13px de lado
+   no dedo). Tamanho vem daqui — e sobe p/ 24px em @media(hover:none), SC 2.5.8. */
+.toolbar input[type=checkbox]{padding:0;flex:0 0 auto;width:18px;height:18px;accent-color:var(--azul)}
+.chip{font-size:11px;padding:3px 9px;border-radius:99px;border:1px solid var(--border);color:var(--muted)}
+.note-hint{font-size:11.5px;color:var(--faint);margin-top:6px}
+/* leitor de conteúdo-base da nota (quem não tem Obsidian lê aqui) */
+.nota-base{margin-bottom:16px}
+.nota-base .nb-sec{margin-bottom:14px}
+.nota-base .nb-h{font-family:var(--mono);font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.nota-base .nb-tx{font-size:13.5px;line-height:1.6;color:var(--ink)}
+.nota-base .nb-tx p{margin:0 0 7px}
+.nota-base .nb-tx p:last-child{margin:0}
+.nota-base .nb-tx b,.nota-base .nb-tx strong{color:var(--ink);font-weight:600}
+.nota-base .nb-tx ul{margin:4px 0 0;padding-left:18px}
+.nota-base .nb-tx li{margin-bottom:3px}
+.nota-base .nb-subs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:2px}
+.nota-base .nb-sub{font-size:11.5px;background:var(--raised);border:1px solid var(--border-soft);border-radius:99px;padding:3px 9px;color:var(--muted)}
+.nota-base .nb-empty{font-size:12.5px;color:var(--faint);font-style:italic}
+.nota-base .nb-div{height:1px;background:var(--border-soft);margin:14px 0}
+.obs-link{font-size:12px;color:var(--muted);text-decoration:none;align-self:center}
+.obs-link:hover{color:var(--azul)}
+.lbl-sub{text-transform:none;letter-spacing:0;color:var(--faint);font-weight:400}
+.help-btn{background:var(--raised);border:1px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.help-btn:hover{color:var(--azul);border-color:var(--azul)}
+/* tutorial (Como usar) */
+.ajuda-b{padding:20px 22px;max-height:76vh;overflow:auto}
+.ajuda-b h3{font-family:var(--serif);font-size:19px;margin-bottom:4px}
+.ajuda-b .aj-lede{color:var(--muted);font-size:13.5px;line-height:1.55;margin-bottom:18px}
+.ajuda-step{display:flex;gap:12px;margin-bottom:16px}
+.ajuda-step .aj-ico{flex:none;width:34px;height:34px;border-radius:10px;background:var(--raised);border:1px solid var(--border-soft);display:flex;align-items:center;justify-content:center;font-size:17px}
+.ajuda-step .aj-tt{font-weight:600;font-size:14px;margin-bottom:2px}
+.ajuda-step .aj-tx{font-size:13px;line-height:1.55;color:var(--muted)}
+.ajuda-step .aj-tx b{color:var(--ink);font-weight:600}
+.ajuda-note{background:var(--raised);border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:12px 14px;font-size:12.5px;line-height:1.55;color:var(--muted);margin-top:4px}
+.ajuda-note b{color:var(--ink)}
+a{color:var(--azul);text-decoration:none}a:hover{text-decoration:underline}
+.foot{text-align:center;color:var(--faint);font-size:11.5px;margin-top:40px;padding-top:20px;border-top:1px solid var(--border-soft)}
+/* diálogos no nível de elevação mais alto: superfície --overlay (mais clara) + sombra
+   longa. Antes usavam --surface (igual aos cards) e não "descolavam" do fundo. */
+dialog{border:var(--card-bd);background:var(--overlay);color:var(--ink);border-radius:var(--radius);padding:0;max-width:520px;width:92vw;max-height:92vh;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.5)}
+dialog::backdrop{background:rgba(6,8,12,.7);backdrop-filter:blur(3px)}
+.dlg-h{padding:16px 18px;border-bottom:1px solid var(--border-soft);font-weight:600;font-family:var(--serif);font-size:17px}
+.dlg-b{padding:18px;max-height:72vh;overflow:auto}
+.dlg-b textarea,.dlg-b input,.dlg-b select{width:100%;background:var(--raised);border:1px solid var(--border);border-radius:9px;padding:10px;margin-bottom:11px;font-size:13.5px}
+.dlg-b label{font-size:11.5px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.dlg-f{display:flex;gap:9px;justify-content:flex-end;padding:0 18px 18px}
+
+/* ===== it.10 — SHELL DE DASHBOARD: barra lateral fixa (desktop ≥901px) =====
+   Referências nomeadas pelo Alex (2026-07-15): dashboards de stats + sidebar-nav
+   (Dribbble: NBA Player Stats, Core 2.0 Dashboard Builder) + acabamento de agência
+   (Wix Studio). É SÓ desktop — no mobile (≤900px) a top-bar + #botNav seguem intactos.
+   Nenhuma cor hardcoded: fundo/telha por token de tema. Eixos ortogonais preservados.
+   Ver DESIGN-SYSTEM.md (it.10). */
+@media(min-width:901px){
+  header.top{position:fixed;top:0;left:0;bottom:0;width:var(--side-w);
+    background:var(--surface);border-right:1px solid var(--border-soft);border-bottom:none;
+    backdrop-filter:none;overflow:hidden}
+  .top-in{flex-direction:column;align-items:stretch;flex-wrap:nowrap;height:100%;
+    max-width:none;margin:0;gap:13px;padding:20px 12px;overflow-y:auto}
+  .brand{flex-direction:column;align-items:flex-start;gap:2px;padding:2px 8px 4px}
+  .brand .h{font-size:19px}
+  /* nav vertical: ícone + rótulo, alvo largo; ativo = trilho âmbar fino (raro=forte) */
+  .nav{flex-direction:column;align-items:stretch;gap:2px;margin-left:0;flex-wrap:nowrap}
+  .nav button{display:flex;align-items:center;gap:11px;justify-content:flex-start;width:100%;
+    padding:9px 11px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:500;text-align:left}
+  .nav button .ni{font-size:15px;width:22px;text-align:center;flex:0 0 auto;filter:saturate(.8)}
+  .nav button:hover{background:var(--raised);color:var(--ink)}
+  /* ativo com trilho âmbar = look da SIDEBAR (lateral). Gated com :where() (especificidade 0)
+     p/ não subir a força do seletor: assim o tema (gradiente/claro) continua vencendo a cor do
+     ativo, e nos layouts topo/inferior este trilho some e o ativo cai no `.on` base (pílula). */
+  :root:where([data-nav="lateral"],:not([data-nav])) .nav button.on{background:var(--raised);color:var(--ink);font-weight:600;box-shadow:inset 2.5px 0 0 var(--sunset)}
+  /* rodapé da barra: ajustes (estilo/tema/perfil/curso) descem ao fundo via margin-top:auto,
+     SEM wrapper novo — assim as regras de `order:` do mobile (top-in achatado) continuam válidas */
+  .help-btn{margin-top:auto;width:100%;text-align:center}
+  .style-pick,.theme-pick{justify-content:center}
+  .nav-pick{display:flex;justify-content:center}   /* o 3º seletor só existe no desktop */
+  /* rótulo dos dois seletores. Só na barra lateral: sem ele, o rodapé da barra é
+     um par de fileiras de emoji sem explicação — parece sujeira, não controle.
+     No topo achatado do mobile eles seguem escondidos (o title/aria já basta lá). */
+  .pick-lb{display:block;font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--faint);padding-left:4px;margin:6px 0 -7px}
+  .profile-pick{flex-wrap:wrap;gap:6px}
+  .profile-pick select{flex:1 1 auto;min-width:0}
+  .course-pick{flex-direction:column;align-items:stretch;gap:5px}
+  .course-pick select{width:100%}
+  /* o conteúdo desloca pra direita da barra. É `main.wrap` (esp. 0,1,1) e não `main`
+     (0,0,1): senão o `.wrap{margin:0 auto}` (0,1,0) vence no margin-left e o conteúdo
+     centra na viewport inteira, indo parar ATRÁS da barra fixa. margin-right segue `auto`. */
+  /* …e CENTRA no espaço que sobra à direita dela. Com `margin-left` fixo e `margin-right:auto`
+     o conteúdo ficava ancorado à esquerda: numa tela de 1920 sobravam 564px de vazio de um lado
+     só e a página parecia torta (print do Alex, 2026-07-19). O max() protege as telas estreitas:
+     quando não há folga, o cálculo fica menor que --side-w e o layout volta a encostar na barra. */
+  main.wrap{margin-left:max(var(--side-w), calc(var(--side-w) + (100% - var(--side-w) - 1320px)/2))}
+  .wrap{max-width:1320px}
+  /* sem top-bar no desktop: o sticky da Estratégia encosta mais no topo */
+  #painelBottom > .card:last-child{top:24px}
+}
+
+/* ===== ② data-nav — LAYOUT MOLDÁVEL (só desktop ≥901px) =====
+   3º eixo, ortogonal à cor/forma: escolhe ONDE fica a navegação. 'lateral' (padrão) é a
+   barra da it.10 acima; aqui ficam as DUAS alternativas — 'topo' e 'inferior'. Preferência
+   POR APARELHO (localStorage 'painelNav'), não sincroniza. Só desktop: no mobile (≤900px) a
+   nav é sempre a #botNav, qualquer que seja o data-nav (por isso .nav-pick some lá).
+   Estes blocos SÓ desfazem o que a it.10 faz p/ virar sidebar; a COR nunca é tocada aqui
+   (o ativo cai no `.on` base, que é ciente de tema). Ver DESIGN-SYSTEM.md (②). */
+@media(min-width:901px){
+  /* — comum às duas: a coluna à esquerda volta a ser uma barra no topo, controles em linha — */
+  :root[data-nav="topo"] header.top,:root[data-nav="inferior"] header.top{
+    position:sticky;top:0;left:auto;right:auto;bottom:auto;width:auto;height:auto;
+    border-right:none;border-bottom:1px solid var(--border-soft);overflow:visible}
+  :root[data-nav="topo"] .top-in,:root[data-nav="inferior"] .top-in{
+    flex-direction:row;align-items:center;flex-wrap:wrap;height:auto;
+    max-width:1320px;margin:0 auto;gap:16px;padding:12px 20px;overflow:visible}
+  :root[data-nav="topo"] .brand,:root[data-nav="inferior"] .brand{flex-direction:row;align-items:baseline;gap:10px;padding:0}
+  :root[data-nav="topo"] .pick-lb,:root[data-nav="inferior"] .pick-lb{display:none}
+  :root[data-nav="topo"] .help-btn,:root[data-nav="inferior"] .help-btn{margin-top:0;width:auto}
+  :root[data-nav="topo"] .course-pick,:root[data-nav="inferior"] .course-pick{flex-direction:row;align-items:center;gap:7px}
+  :root[data-nav="topo"] .course-pick select,:root[data-nav="inferior"] .course-pick select{width:auto}
+  :root[data-nav="topo"] .profile-pick select,:root[data-nav="inferior"] .profile-pick select{flex:0 1 auto;min-width:auto}
+  :root[data-nav="topo"] main.wrap,:root[data-nav="inferior"] main.wrap{margin-left:auto;margin-right:auto}
+  :root[data-nav="topo"] #painelBottom > .card:last-child,
+  :root[data-nav="inferior"] #painelBottom > .card:last-child{top:60px}
+
+  /* — TOPO: nav horizontal à direita; pílulas de texto (ícones escondidos, top bar clássica) — */
+  :root[data-nav="topo"] .nav{flex-direction:row;align-items:center;margin-left:auto;flex-wrap:wrap;gap:2px}
+  :root[data-nav="topo"] .nav button{width:auto;justify-content:center;text-align:center;
+    padding:7px 13px;border-radius:var(--nav-radius)}
+  :root[data-nav="topo"] .nav .ni{display:none}
+
+  /* — INFERIOR: nav fixa embaixo (ícone sobre rótulo, como a barra do celular, mas com as 10) — */
+  :root[data-nav="inferior"] .help-btn{margin-left:auto}
+  :root[data-nav="inferior"] .nav{
+    position:fixed;left:0;right:0;bottom:0;z-index:60;margin-left:0;
+    flex-direction:row;justify-content:center;align-items:stretch;flex-wrap:wrap;gap:4px;
+    background:var(--surface);border-top:1px solid var(--border);
+    padding:8px 16px calc(8px + env(safe-area-inset-bottom))}
+  :root[data-nav="inferior"] .nav button{width:auto;flex-direction:column;gap:3px;
+    justify-content:center;align-items:center;padding:6px 13px;border-radius:var(--radius-sm);text-align:center}
+  :root[data-nav="inferior"] .nav button .ni{display:inline-block;font-size:17px;width:auto;filter:saturate(.8)}
+  :root[data-nav="inferior"] main.wrap{padding-bottom:96px}
+}
+
+@media(max-width:820px){
+  .hero-grid{grid-template-columns:1fr}.hero-right{min-height:150px;border-left:none;border-top:1px solid var(--border-soft)}
+  .split,.sim-grid{grid-template-columns:1fr}.sim-out{position:static}
+  .sim-row{grid-template-columns:110px 1fr 46px 40px}
+}
+/* ---------- Responsivo: reflow do cabeçalho + nav rolável (mobile-first do shell) ---------- */
+@media(max-width:900px){
+  .top-in{flex-wrap:wrap;gap:9px 10px;padding:11px 16px}
+  .brand{order:1}
+  .style-pick{order:1}
+  .theme-pick{order:1}
+  .profile-pick{order:1;margin-left:auto}
+  .course-pick{order:2;width:100%}
+  .course-pick select{flex:1;min-width:0}
+  .nav{order:3;width:100%;margin-left:0;flex-wrap:nowrap;overflow-x:auto;gap:4px;
+    padding-bottom:3px;scroll-snap-type:x proximity;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+    mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 14px),transparent);}
+  .nav::-webkit-scrollbar{display:none}
+  .nav button{flex:0 0 auto;scroll-snap-align:start;padding:9px 14px;font-size:14px}
+}
+@media(max-width:560px){
+  .wrap{padding:0 14px}
+  main{padding:20px 0 84px}
+  h2.section{font-size:22px}
+  .hero-left{padding:22px 18px}
+  .hero h1{font-size:24px}
+  .hero .lede{font-size:14px}
+  .hero-stats{gap:14px 22px}
+  .hstat .n{font-size:25px}
+  .disc-grid{grid-template-columns:1fr}
+  .two-col{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr 1fr}
+  /* Análise: no celular a barra de incidência desce para uma linha própria — em 2 colunas
+     ela espremia o nome do tópico e o placar. */
+  .an-row{grid-template-columns:1fr auto;gap:5px 8px}
+  .an-row .an-bar{grid-column:1/-1;order:3}
+  .an-num{min-width:0}
+  .toolbar,.log-form,.rec-controls,.lt-filters{gap:7px}
+  .toolbar .btn,.toolbar select,.toolbar input{flex:1 1 auto;min-width:0}
+  /* fila do SRS: os 4 botões (198px) não cabiam ao lado do texto — o item ficava 554px
+     numa tela de 500px e o "Fácil" era cortado pelo guard de overflow-x. Agora eles
+     descem para uma linha própria, ocupando a largura toda (alvo de toque maior). */
+  .due-item{flex-wrap:wrap}
+  .due-item .info{flex:1 1 auto;min-width:0}
+  .due-item .srs-btns{flex:1 1 100%}
+  .due-item .srs-btns button{flex:1;padding:8px 6px}
+  /* fase macro: 4 segmentos + setas não cabem em 390px numa linha só — viram grade 2×2, setas somem */
+  .fase-macro .fase-trilha{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .fase-arw{display:none}
+  dialog{width:96vw;max-width:96vw;max-height:94vh}
+  .dlg-b{max-height:76vh}
+  .dlg-f{padding:12px 16px 16px}
+}
+/* ================= Navegação inferior (celular) =================
+   As 10 abas tinham o mesmo peso e, no celular, viravam uma tira que rolava de lado:
+   "Argumento" e "Leituras" ficavam fora da tela e ninguém as achava. Elas são, na
+   verdade, 3 modos — estudar / testar / medir. Aqui viram uma barra fixa de 5: as 3
+   telas do dia a dia direto (Painel, Questões, Redação) e 2 grupos que abrem uma folha.
+   Tudo a 1 ou 2 toques. No desktop a nav de cima continua exatamente como era.
+   O `#dlgGrupo` usa seletor de ID de propósito: ele precisa vencer o `dialog{width:96vw}`
+   do bloco de 560px acima (id > elemento), senão a folha vira um diálogo centralizado. */
+#botNav{display:none}
+@media(max-width:900px){
+  .nav{display:none}                            /* morre a tira que rolava de lado */
+  #botNav{
+    display:grid;grid-template-columns:repeat(5,1fr);
+    position:fixed;left:0;right:0;bottom:0;z-index:60;
+    background:var(--surface);border-top:1px solid var(--border);
+    padding-bottom:env(safe-area-inset-bottom);  /* a barra do iPhone não come o alvo */
+  }
+  #botNav button{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    min-height:58px;padding:8px 2px 9px;border:none;background:none;
+    color:var(--faint);font-size:10.5px;font-weight:600;line-height:1.2}
+  #botNav button .bi{font-size:19px;line-height:1}
+  #botNav button.on{color:var(--sunset)}
+  /* `main.wrap` e não `main`: o `.wrap{padding:0 20px}` é seletor de CLASSE e vence
+     `main{...}` — por isso o padding-bottom do main sempre foi 0 (regra morta desde
+     antes disto). Sem esta linha o rodapé fica escondido atrás da barra fixa. */
+  main.wrap{padding-bottom:104px}
+}
+#dlgGrupo{border:none;padding:0;background:transparent;width:100%;max-width:100%;
+  max-height:92vh;margin:auto auto 0}
+#dlgGrupo::backdrop{background:rgba(0,0,0,.55)}
+#dlgGrupo .sheet{background:var(--surface);border-top:1px solid var(--border);
+  border-radius:18px 18px 0 0;padding:14px 16px calc(18px + env(safe-area-inset-bottom))}
+#dlgGrupo .sheet-h{display:flex;align-items:center;justify-content:space-between;
+  font-family:var(--serif);font-size:18px;font-weight:600;margin-bottom:10px}
+.sheet-it{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  padding:12px 10px;border-radius:12px;border:1px solid transparent;min-height:56px;background:none}
+.sheet-it:active{background:var(--raised)}
+.sheet-it.on{border-color:var(--sunset);background:var(--raised)}
+.sheet-it .ic{font-size:20px;width:26px;text-align:center;flex:0 0 auto}
+.sheet-it .tx{display:flex;flex-direction:column;min-width:0}
+.sheet-it .tt{font-size:14.5px;font-weight:600;color:var(--ink)}
+.sheet-it .dd{font-size:11.5px;color:var(--faint);margin-top:2px}
+
+/* Alvos de toque. Medido num viewport REAL de 390px com pointer:coarse: chips de 22px,
+   chips de tópico de 18px, "abrir todas" de 25px — abaixo do mínimo confortável no dedo.
+   Só vale onde não há mouse; no desktop a densidade continua a mesma. */
+@media(hover:none){
+  .btn,.chip,.pv-opt,.tag.tlink,.rt-go,.topic .obs,.lt-filters button,.an-tabs button,
+  .red-filtros button,.wiz-nav button,.bq-links a,.bq-links button,.fase-chip{min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:5px}
+  .chip,.tag.tlink{padding:6px 12px}
+  /* precisa repetir o seletor .toolbar: media query não soma especificidade,
+     e .toolbar input[type=checkbox] (lá em cima) venceria o input[type=checkbox] daqui. */
+  input[type=checkbox],.toolbar input[type=checkbox]{width:24px;height:24px}
+  /* Sobras que a passada anterior não pegou (medido a 390px com toque emulado):
+     o 📄 da proposta tinha 21px e as pistas do Simulador, 16px — abaixo dos 24x24px
+     que a WCAG 2.2 (SC 2.5.8) exige. O <a> é inline: sem display:inline-flex o
+     min-height não faz efeito nenhum. */
+  a.badge-b{min-height:32px;display:inline-flex;align-items:center}
+  .sim-row input[type=range]{height:34px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto}}
+/* ---------- provas oficiais (simulado c/ gabarito) ---------- */
+#pvGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:6px}
+.pv-row{display:flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid var(--border-soft);border-radius:9px;background:var(--surface)}
+.pv-row .pn{font-family:var(--mono);font-size:11px;color:var(--faint);width:22px;text-align:right}
+.pv-opt{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:600;transition:.12s}
+.pv-opt:hover{border-color:var(--azul);color:var(--ink)}
+.pv-opt.sel{background:var(--azul);border-color:var(--azul);color:#0b1016}
+.pv-opt.ok{background:var(--verde);border-color:var(--verde);color:#0b1016}
+.pv-opt.bad{background:var(--vermelho);border-color:var(--vermelho);color:#fff}
+.pv-opt.gab{border-color:var(--verde);color:var(--verde)}
+.pv-opt:disabled{cursor:default;opacity:1}
+.pv-row .anulada{font-size:10px;color:var(--faint);font-family:var(--mono);letter-spacing:1px}
+.pv-hist-item{display:flex;gap:10px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--border-soft);font-size:12.5px;flex-wrap:wrap}
+.pv-hist-item .sc{font-family:var(--mono);font-weight:700}
+.pv-reso-item{border:1px solid var(--border-soft);border-radius:10px;padding:11px 13px;margin-bottom:9px;background:var(--surface)}
+.pv-reso-item .pv-reso-top{display:flex;align-items:center;gap:9px;margin-bottom:9px;flex-wrap:wrap}
+.pv-reso-item .rr{font-size:12.5px;color:var(--muted)}
+/* ---------- redação ---------- */
+.split-red{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:980px){.split-red{grid-template-columns:1fr}}
+.red-bib{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;margin:10px 0}
+.red-bib a.bib{display:block;border:1px solid var(--border-soft);border-radius:10px;padding:10px 12px;background:var(--surface);color:var(--ink);font-size:12.5px;line-height:1.45}
+.red-bib a.bib:hover{border-color:var(--azul);text-decoration:none}
+.red-bib a.bib .bt{color:var(--faint);font-size:10.5px;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:3px}
+.red-comps{display:flex;gap:6px;flex-wrap:wrap;font-family:var(--mono);font-size:10.5px}
+.red-comps span{border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--muted)}
+#drCompBox .comp-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+#drCompBox .comp-row label{margin:0;flex:1;font-size:12px}
+#drCompBox select{width:90px}
+/* ---- Recursos ---- */
+.rec-controls{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.rec-controls select{background:var(--raised);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px}
+.rec-disc{margin-bottom:22px}
+.rec-disc-h{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.rec-disc-h .ic{font-size:18px;width:30px;height:30px;display:grid;place-items:center;background:var(--raised);border-radius:8px}
+.rec-disc-h .nm{font-weight:600;font-size:15px}
+.rec-chans{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:14px}
+a.rec-chan{display:block;border:1px solid var(--border-soft);border-left-width:3px;border-radius:10px;padding:11px 13px;background:var(--surface);color:var(--ink);transition:.12s}
+a.rec-chan:hover{border-color:var(--azul);border-left-color:var(--azul);text-decoration:none;transform:translateY(-1px)}
+a.rec-chan.essencial{border-left-color:var(--verde)} a.rec-chan.bom{border-left-color:var(--amarelo)} a.rec-chan.complementar{border-left-color:var(--faint)}
+.rec-chan .ch-top{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.rec-chan .ch-nm{font-weight:600;font-size:13.5px}
+.rec-chan .ch-tier{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:1px;padding:1px 6px;border-radius:5px;margin-left:auto;white-space:nowrap}
+.rec-chan.essencial .ch-tier{color:var(--verde);border:1px solid #2f5a48} .rec-chan.bom .ch-tier{color:var(--amarelo);border:1px solid #5a5030} .rec-chan.complementar .ch-tier{color:var(--faint);border:1px solid var(--border)}
+.rec-chan .ch-tipo{font-family:var(--mono);font-size:9px;color:var(--faint);text-transform:uppercase;letter-spacing:1px}
+.rec-chan .ch-foco{font-size:12px;color:var(--muted);line-height:1.45;margin-top:5px}
+.rec-topics{border-top:1px solid var(--border-soft);padding-top:10px}
+.rec-eixo-nm{font-family:var(--mono);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin:8px 2px 5px}
+.rec-topic{display:flex;align-items:center;gap:9px;padding:5px 6px;border-radius:8px;transition:.12s}
+.rec-topic:hover{background:var(--raised)}
+.rec-topic .rt-nm{flex:1;min-width:0;font-size:13px}
+.rec-topic .rt-nm b{font-weight:500}
+.rec-topic a.rt-go{font-size:11px;color:var(--azul);border:1px solid var(--border);border-radius:6px;padding:2px 8px;white-space:nowrap}
+.rec-topic a.rt-go:hover{border-color:var(--azul);text-decoration:none}
+.inc{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.8px;padding:1px 6px;border-radius:5px;white-space:nowrap;flex-shrink:0}
+.inc.alta{color:var(--sunset);background:rgba(217,127,67,.14);border:1px solid var(--sunset-deep)}
+.inc.media{color:var(--muted);background:var(--raised);border:1px solid var(--border)}
+.inc.baixa{color:var(--faint);border:1px solid var(--border-soft)}
+.inc.obs{font-weight:700;box-shadow:0 0 0 1px currentColor inset}
+.rec-sites{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:9px;margin-top:6px}
+a.rec-site{display:block;border:1px solid var(--border-soft);border-radius:9px;padding:9px 11px;background:var(--raised);color:var(--ink);font-size:12.5px}
+a.rec-site:hover{border-color:var(--azul);text-decoration:none}
+a.rec-site .st-nm{font-weight:600;display:block;margin-bottom:2px}
+a.rec-site .st-foco{color:var(--muted);font-size:11.5px;line-height:1.4}
+/* ---- Leituras ---- */
+.lt-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.lt-filters button{padding:6px 13px;border-radius:99px;font-size:12.5px;color:var(--muted);border:1px solid var(--border);background:transparent;transition:.12s}
+.lt-filters button:hover{color:var(--ink);border-color:var(--azul)}
+.lt-filters button.on{color:var(--bg);background:var(--sunset);border-color:var(--sunset);font-weight:600}
+.lt{background:var(--surface);border:1px solid var(--border-soft);border-left:3px solid var(--border);border-radius:var(--r);margin-bottom:11px;overflow:hidden;transition:.15s}
+.lt.ingressante{border-left-color:var(--sunset)} .lt.remanescente{border-left-color:var(--azul)} .lt.coringa{border-left-color:var(--verde)}
+.lt:hover{border-color:var(--border)}
+.lt-h{display:flex;align-items:baseline;gap:10px;padding:14px 16px;cursor:pointer;flex-wrap:wrap}
+.lt-h .tt{font-weight:600;font-size:15.5px}
+.lt-h .au{font-size:13px;color:var(--muted)}
+.lt-h .meta{font-family:var(--mono);font-size:10px;color:var(--faint);margin-left:6px}
+.lt-h .badge{margin-left:auto;font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:1px;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lt.ingressante .badge{color:var(--sunset);border:1px solid var(--sunset-deep)} .lt.remanescente .badge{color:var(--azul);border:1px solid var(--azul-deep)} .lt.coringa .badge{color:var(--verde);border:1px solid #2f5a48}
+.lt-h .caret{font-size:11px;color:var(--faint);transition:.2s;margin-left:4px}
+.lt.open .lt-h .caret{transform:rotate(90deg)}
+.lt-body{display:none;padding:0 16px 16px;border-top:1px solid var(--border-soft)}
+.lt.open .lt-body{display:block}
+.lt-frase{font-size:14px;line-height:1.55;color:var(--ink);background:var(--raised);border-radius:10px;padding:12px 14px;margin:14px 0}
+.lt-frase b{color:var(--ink)}
+.lt-seclabel{font-family:var(--mono);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin:16px 0 9px;display:flex;align-items:center;gap:7px}
+.lt-eixo{border:1px solid var(--border-soft);border-radius:10px;padding:11px 13px;margin-bottom:9px;background:var(--surface)}
+.lt-eixo .et{font-weight:600;font-size:13.5px;margin-bottom:6px}
+.lt-eixo .lb{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--faint);margin-right:5px}
+.lt-eixo .ln{font-size:12.5px;line-height:1.5;color:var(--muted);margin-top:4px}
+.lt-eixo .ln.use{color:var(--ink)}
+.lt-obj{display:flex;gap:9px;font-size:12.5px;line-height:1.5;color:var(--muted);padding:6px 0;border-bottom:1px solid var(--border-soft)}
+.lt-obj:last-child{border-bottom:0}
+.lt-obj .ob-r{flex-shrink:0;font-family:var(--mono);font-size:10px;color:var(--azul);text-transform:uppercase;letter-spacing:.5px;min-width:96px}
+.lt-conx{font-size:12.5px;color:var(--muted);line-height:1.5;background:var(--raised);border-radius:9px;padding:10px 12px;margin-top:14px}
+.lt-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.lt-links a{font-size:11.5px;color:var(--azul);border:1px solid var(--border);border-radius:7px;padding:4px 10px}
+.lt-links a:hover{border-color:var(--azul);text-decoration:none}
+/* diálogo onde-aprender */
+#dnRecBody .rd-sec{font-family:var(--mono);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin:14px 0 7px}
+#dnRecBody .rd-sec:first-child{margin-top:0}
+#dnRecBody a{display:block;border:1px solid var(--border-soft);border-radius:9px;padding:9px 11px;margin-bottom:7px;background:var(--surface);color:var(--ink);font-size:13px}
+#dnRecBody a:hover{border-color:var(--azul);text-decoration:none}
+#dnRecBody a .rd-foco{color:var(--muted);font-size:11.5px;line-height:1.4;margin-top:3px}
+/* ---------- Dedicatória (kit presenteável — perfil-seed.js) ---------- */
+#dedic{position:fixed;inset:0;z-index:200;overflow-y:auto;
+  background:linear-gradient(180deg,#0c0f16 0%,#141a2c 34%,#3a2f4a 62%,#8a4a3f 82%,#d97f43 96%,#f2a154 100%);}
+#dedic::before{content:"";position:fixed;left:50%;bottom:-90px;transform:translateX(-50%);
+  width:340px;height:340px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(242,161,84,.55) 0%,rgba(242,161,84,.18) 45%,transparent 70%);}
+.dedic-in{position:relative;max-width:640px;margin:0 auto;padding:8vh 24px 12vh;text-align:center}
+.dedic-kicker{font-family:var(--mono);font-size:10.5px;letter-spacing:3px;text-transform:uppercase;color:var(--sunset);margin-bottom:14px}
+#dedicTitulo{font-family:var(--serif);font-size:clamp(28px,5vw,40px);font-weight:600;line-height:1.2;margin-bottom:26px}
+#dedicFotos{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:10px 0 34px}
+#dedicFotos img{width:150px;height:150px;object-fit:cover;border-radius:6px;transform:rotate(var(--rot,0deg));
+  border:5px solid #fff;border-bottom-width:22px;box-shadow:0 8px 24px rgba(0,0,0,.45);background:#fff}
+#dedicMsg{font-family:var(--serif);font-size:16.5px;line-height:1.75;color:var(--ink);text-align:left}
+#dedicMsg p{margin-bottom:14px}
+#dedicAss{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--sunset);margin:6px 0 34px;text-align:right}
+.dedic-go{display:inline-block;font-size:14.5px;font-weight:600;padding:12px 26px;border-radius:99px;
+  background:var(--sunset);color:#1a1206;box-shadow:0 6px 20px rgba(242,161,84,.35)}
+.dedic-go:hover{background:#f7b06a}
+.dedic-hint{font-size:11.5px;color:var(--muted);margin-top:12px}
+#dlBilheteBody p{margin-bottom:12px}
+/* ---------- R2: wizard de redação (Critério → Tema → Escrever) ---------- */
+.wizard{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 18px}
+@media(max-width:820px){.wizard{grid-template-columns:1fr}}
+.passo{background:var(--surface);border:1px solid var(--border-soft);border-radius:12px;padding:13px 16px;cursor:pointer;text-align:left;transition:.15s}
+.passo .num{font-family:var(--mono);font-size:10px;letter-spacing:1.6px;color:var(--faint)}
+.passo b{display:block;font-size:15px;margin:3px 0 2px}
+.passo .d{font-size:11.5px;color:var(--muted);display:block;line-height:1.4}
+.passo.feito{border-color:#2f5a48}
+.passo.feito .num{color:var(--verde)}
+.passo.feito .num::after{content:" ✓"}
+.passo.atual{border-color:var(--sunset);box-shadow:0 0 0 1px var(--sunset) inset}
+.passo.atual .num{color:var(--sunset)}
+.passo.trava{opacity:.45;cursor:not-allowed}
+.rub-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.rub-card{background:var(--surface);border:1px solid var(--border-soft);border-radius:12px;padding:14px;cursor:pointer;transition:.15s;text-align:left;font-size:inherit}
+.rub-card:hover{border-color:var(--sunset-deep);transform:translateY(-1px)}
+.rub-card.sel{border-color:var(--sunset);box-shadow:0 0 0 1px var(--sunset) inset}
+.rub-card .rb-nm{font-weight:700;font-size:15px}
+.rub-card .rb-esc{font-family:var(--mono);font-size:10.5px;color:var(--sunset);margin-left:6px}
+.rub-card ul{margin:8px 0 0;padding-left:16px;font-size:12px;color:var(--muted);line-height:1.55}
+.grid-tema{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:12px}
+.tema-card{background:var(--surface);border:1px solid var(--border-soft);border-radius:12px;overflow:hidden;cursor:pointer;transition:.15s;display:flex;flex-direction:column}
+.tema-card:hover{transform:translateY(-2px);border-color:var(--sunset-deep)}
+.tema-card .capa{height:60px;display:flex;align-items:flex-end;justify-content:space-between;gap:6px;padding:8px 12px;flex-shrink:0}
+.capa.b-ufrgs{background:linear-gradient(140deg,#1a2a44,#4a3040 70%,#c77b35)}
+.capa.b-enem{background:linear-gradient(140deg,#14304a,#1a4a5e 70%,#2e8ca8)}
+.capa.b-fuvest{background:linear-gradient(140deg,#2a1f3d,#40305c 70%,#7a5aa8)}
+.capa.b-livre{background:linear-gradient(140deg,#1c3a32,#2f5a48 70%,#3fb984)}
+.badge-b{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1px;background:rgba(0,0,0,.42);color:#fff;border-radius:99px;padding:3px 10px;text-decoration:none}
+a.badge-b:hover{background:rgba(0,0,0,.7);text-decoration:none}
+.tema-card .corpo{padding:10px 12px 12px;display:flex;flex-direction:column;gap:7px;flex:1}
+.tema-card .corpo b{font-size:13px;line-height:1.4;font-weight:600}
+.st-faixa{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;border-radius:99px;padding:3px 10px;width:fit-content;margin-top:auto}
+.st-faixa.ok{color:var(--verde);background:rgba(63,185,132,.1);border:1px solid #2f5a48}
+.st-faixa.pend{color:var(--amarelo);background:rgba(230,185,63,.08);border:1px solid #5a5030}
+.st-faixa.novo{color:var(--muted);background:var(--raised);border:1px solid var(--border-soft)}
+.tema-filtros{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 12px}
+.tema-filtros button{font-size:12px;padding:5px 12px;border-radius:99px;border:1px solid var(--border);color:var(--muted);transition:.12s}
+.tema-filtros button:hover{color:var(--ink);border-color:var(--sunset-deep)}
+.tema-filtros button.on{background:var(--sunset);border-color:var(--sunset);color:var(--bg);font-weight:600}
+/* histórico de redações em cards */
+.red-hist{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.red-hist .rh{background:var(--surface);border:1px solid var(--border-soft);border-radius:12px;padding:13px 14px;display:flex;flex-direction:column;gap:8px}
+.rh .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rh .top .tm{font-size:13px;font-weight:600;line-height:1.35;flex:1;min-width:0}
+.rh .nota{font-family:var(--mono);font-weight:700;font-size:17px}
+.rh p{font-size:12.5px;color:var(--muted);line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin:0}
+.rh .acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto;align-items:center}
+/* ---------- R3: análise · sub-abas + desempenho de redação ---------- */
+.an-tabs{display:flex;gap:6px;margin-bottom:16px}
+.an-tabs button{padding:7px 18px;border-radius:99px;font-size:13px;color:var(--muted);border:1px solid var(--border);transition:.12s}
+.an-tabs button:hover{color:var(--ink)}
+.an-tabs button.on{background:var(--sunset);border-color:var(--sunset);color:var(--bg);font-weight:600}
+/* Fase 3 — mapa de risco (scatter incidência × acerto, canvas) */
+.an-map-wrap{position:relative}
+#anMap{display:block;width:100%;height:260px;cursor:crosshair}
+.an-map-tip{position:absolute;pointer-events:none;z-index:6;display:none;background:var(--overlay);
+  border:1px solid var(--border);border-radius:8px;padding:6px 9px;font-size:11.5px;line-height:1.45;
+  color:var(--muted);box-shadow:0 8px 20px rgba(0,0,0,.32);max-width:210px;transform:translate(-50%,calc(-100% - 10px))}
+.an-map-tip b{color:var(--ink)}
+.an-map-empty{color:var(--muted);font-size:13px;line-height:1.55;padding:26px 8px;text-align:center}
+/* números tabulares: dígitos de largura fixa — não "pulam" quando o valor muda (RELATORIO §KPIs).
+   `lining-nums` junto de propósito: a Candara (Ateliê) usa algarismos de ESTILO ANTIGO por padrão —
+   o zero desce e "0/13 dominados" era lido como "o/13". Num app de números isso parece defeito. */
+.hstat .n,.kpi .n,.sim-out .big,.sim-row .ep,.sim-row .pw,.an-num,.disc-h .pct,.hd .ring text{font-variant-numeric:lining-nums tabular-nums}
+:root[data-style="atelie"] body{font-variant-numeric:lining-nums}
+.anr-hero{display:grid;grid-template-columns:250px 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:820px){.anr-hero{grid-template-columns:1fr}}
+.anr-anel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  background:linear-gradient(170deg,var(--raised),var(--surface));border:1px solid var(--sunset-deep);border-radius:var(--r);padding:18px}
+.anr-crit{padding:9px 0;border-bottom:1px solid var(--border-soft)}
+.anr-crit:last-child{border-bottom:0}
+.anr-crit .cr-top{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:5px}
+.anr-crit .cr-top .v{font-family:var(--mono);color:var(--muted)}
+.anr-crit .trilho{height:9px;border-radius:5px;background:var(--raised);overflow:hidden}
+.anr-crit .trilho i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--sunset-deep),var(--sunset))}
+.anr-crit.fraco .trilho i{background:linear-gradient(90deg,#8a3d36,var(--vermelho))}
+/* ---------- R1: home — disciplinas compactas + foco com porquês ---------- */
+/* grid-auto-rows:1fr — todas as linhas com a MESMA altura. Sem isso, "Língua Portuguesa"
+   e "Língua Estrangeira" quebram o título em 2 linhas e a fileira delas fica mais alta que
+   as outras: dez cards iguais viravam três alturas diferentes. */
+/* 220px e não 235: são 10 disciplinas, e a 1440px (notebook comum) 235 dava 4 colunas —
+   4+4+2, com dois buracos na última fileira. Com 220 cabem 5 (contando os 40px de padding
+   do .wrap, que quase me enganaram), e 10 fecha em 2 fileiras cheias de 1440 pra cima. */
+.home-discs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));grid-auto-rows:1fr;gap:14px;margin-bottom:28px}
+.hd{background:var(--surface);border:var(--card-bd);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:13px 15px;cursor:pointer;display:flex;align-items:center;gap:13px;transition:var(--motion);text-align:left;font-size:inherit}
+.hd:hover{border-color:var(--azul);transform:translateY(-1px)}
+.hd:active{transform:scale(.985)}
+/* anel de progresso: azul Guaíba = progresso (o âmbar deixou de pintar tudo) */
+.hd .ring{flex:0 0 auto}
+.hd .ring .rt{stroke:var(--raised2)}
+.hd .ring .rp{stroke:var(--azul)}
+.hd .ring text{fill:var(--ink);font-family:var(--mono);font-weight:600}
+.hd-tx{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1}
+.hd header{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px}
+.hd .peso{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--faint);background:var(--raised2);border:1px solid var(--border-soft);border-radius:99px;padding:1px 7px}
+.hd .meta{font-size:11px;color:var(--faint)}
+.foco-card{border:1px solid var(--border-soft);border-left:3px solid var(--azul);border-radius:var(--radius-sm);background:var(--raised);padding:11px 13px;margin-bottom:9px}
+.foco-card .fc-t{font-weight:600;font-size:13.5px}
+.foco-card .why{font-size:11.5px;color:var(--muted);margin:3px 0 8px;line-height:1.5}
+.foco-card .why b{color:var(--amarelo)}
+.foco-card .fc-acts{display:flex;gap:7px;flex-wrap:wrap}
+.foco-card .fc-acts .btn{font-size:12px;padding:5px 12px}
+/* alerta: você marcou como dominado, mas erra as questões oficiais do tópico */
+.foco-card.alerta{border-left-color:var(--vermelho)}
+/* ===== ⑤ Recursos = plataforma-guia (mapa/trilha por disciplina) ===== */
+.rec-vista{display:flex;align-items:center;gap:8px;margin:0 0 14px;flex-wrap:wrap}
+.rec-vista .rv-lb{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:1px}
+.rv-btn{padding:6px 13px;border-radius:99px;border:1px solid var(--border);background:var(--raised);color:var(--muted);font:inherit;font-size:13px;cursor:pointer;transition:.14s}
+.rv-btn:hover{color:var(--ink)}
+.rv-btn.on{background:var(--surface);color:var(--ink);border-color:var(--sunset-deep);box-shadow:inset 0 0 0 1px var(--sunset-deep)}
+.rec-guia{background:var(--surface);border:var(--card-bd);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:var(--card-shadow)}
+.rec-guia-h{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.rec-guia-h .ic{font-size:19px}
+.rec-guia-h .nm{font-weight:600;font-size:15px}
+.rec-guia-h .wt{font-size:11.5px;color:var(--faint);font-family:var(--mono)}
+.rec-guia-h .rg-prog{flex:1;height:6px;border-radius:99px;background:var(--raised);overflow:hidden;min-width:50px}
+.rec-guia-h .rg-prog i{display:block;height:100%;background:var(--sunset)}
+.rec-guia-h .rg-pct{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.rec-esquema .rec-eixo{margin-bottom:11px}
+.rec-esquema .rec-eixo-nm{font-size:11.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.6px;margin:0 0 6px}
+.rec-tiles{display:flex;flex-wrap:wrap;gap:7px}
+.rec-tile{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:9px;border:1px solid var(--border-soft);background:var(--raised);color:var(--ink);font:inherit;font-size:12.5px;cursor:pointer;text-align:left;transition:.14s}
+.rec-tile:hover{border-color:var(--sunset-deep);transform:translateY(-1px)}
+.rec-tile .rt-dot{width:8px;height:8px;border-radius:99px;background:var(--cinza);flex:none}
+.rec-tile.t1 .rt-dot{background:var(--amarelo)}
+.rec-tile.t2 .rt-dot{background:var(--verde)}
+.rec-tile.alta{box-shadow:inset 0 -2px 0 var(--sunset)}
+.rec-tile .rt-inc{color:var(--sunset);font-size:11px}
+.rec-tile .rt-q{color:var(--azul);font-size:10.5px;font-family:var(--mono);opacity:.85}
+.rec-legenda{display:flex;flex-wrap:wrap;gap:12px;margin-top:9px;font-size:11px;color:var(--faint);align-items:center}
+.rec-legenda .lg{display:inline-block;width:9px;height:9px;border-radius:99px;margin-right:4px;vertical-align:middle}
+.rec-legenda .lg.t0{background:var(--cinza)}.rec-legenda .lg.t1{background:var(--amarelo)}.rec-legenda .lg.t2{background:var(--verde)}
+.rec-trilha{display:flex;flex-direction:column;gap:2px}
+.rec-etapa{padding:7px 0}
+.re-lb{font-size:11.5px;color:var(--sunset);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.re-arw{color:var(--faint)}
+.rec-trilha-vazia{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.rec-guia-canais{margin-top:13px;border-top:1px solid var(--border-soft);padding-top:11px}
+.rg-sub{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px}
+.rd-trio{display:flex;flex-wrap:wrap;gap:6px;margin:3px 0 4px}
+.rd-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:99px;border:1px solid var(--border);background:var(--raised);color:var(--ink);font-size:12.5px;text-decoration:none;transition:.14s}
+.rd-chip:hover{border-color:var(--sunset-deep);color:var(--ink)}
+</style>
+<script>/* aplica tema+estilo salvos ANTES do 1º paint (sem flash) */
+try{var _t=localStorage.getItem('painelTema');if(_t&&_t!=='escuro')document.documentElement.dataset.theme=_t;
+var _tc={escuro:'#0c0f16',guaiba:'#070f1e',claro:'#eef1f8',gradiente:'#0a0e24'}[_t||'escuro'];
+if(_tc){var _m=document.querySelector('meta[name="theme-color"]');if(_m)_m.setAttribute('content',_tc);}
+var _s=localStorage.getItem('painelEstilo');if(_s&&_s!=='literaria')document.documentElement.dataset.style=_s;
+var _n=localStorage.getItem('painelNav');if(_n&&_n!=='lateral')document.documentElement.dataset.nav=_n;}catch(e){}</script>
+</head>
+<body>
+<div id="fxWipe" aria-hidden="true"></div>
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <span class="h">Horizonte Estudos</span>
+      <span class="sub">UFRGS · ENEM</span>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-tab="painel" class="on"><span class="ni">🏠</span>Painel</button>
+      <button data-tab="edital"><span class="ni">🗺</span>Mapa do Edital</button>
+      <button data-tab="recursos"><span class="ni">🌐</span>Recursos</button>
+      <button data-tab="revisao"><span class="ni">🔁</span>Cronograma</button>
+      <button data-tab="metricas"><span class="ni">📈</span>Métricas</button>
+      <button data-tab="analise"><span class="ni">🔍</span>Análise</button>
+      <button data-tab="banco"><span class="ni">🎯</span>Questões</button>
+      <button data-tab="redacao"><span class="ni">✍️</span>Redação</button>
+      <button data-tab="leituras"><span class="ni">📖</span>Leituras</button>
+      <button data-tab="simulador"><span class="ni">⚖️</span>Argumento</button>
+    </nav>
+    <button class="help-btn" onclick="document.getElementById('dlgAjuda').showModal()" title="Como usar o painel — guia rápido">❓ Como usar</button>
+    <span class="pick-lb">estilo</span>
+    <div class="style-pick" role="group" aria-label="Estilo de design">
+      <button data-style="literaria" title="Look Literária — revista literária (serif, pôr-do-sol)" aria-label="Look Literária">📖</button>
+      <button data-style="linear" title="Look Linear — preciso, escuro, contido" aria-label="Look Linear">📐</button>
+      <button data-style="atelie" title="Look Ateliê — Things/Apple, sereno e claro" aria-label="Look Ateliê">🕊️</button>
+      <button data-style="aurora" title="Look Aurora — Arc/Vercel, moderno e gradiente" aria-label="Look Aurora">🌌</button>
+    </div>
+    <span class="pick-lb">tema</span>
+    <div class="theme-pick" role="group" aria-label="Tema do painel">
+      <button data-theme="escuro" title="Tema escuro (Horizonte, pôr-do-sol quente)" aria-label="Tema escuro">🌙</button>
+      <button data-theme="guaiba" title="Tema Guaíba (azul-água, frio — nativo do Linear)" aria-label="Tema Guaíba">🌊</button>
+      <button data-theme="claro" title="Tema claro" aria-label="Tema claro">☀️</button>
+      <button data-theme="gradiente" title="Tema gradiente (pôr-do-sol difuso)" aria-label="Tema gradiente">🌈</button>
+    </div>
+    <span class="pick-lb">layout</span>
+    <div class="nav-pick" role="group" aria-label="Posição da navegação (desktop)">
+      <button data-nav="lateral" title="Navegação à esquerda (barra lateral)" aria-label="Navegação lateral">▌</button>
+      <button data-nav="topo" title="Navegação no topo" aria-label="Navegação no topo">▀</button>
+      <button data-nav="inferior" title="Navegação embaixo (barra inferior)" aria-label="Navegação embaixo">▄</button>
+    </div>
+    <div class="profile-pick">
+      <button id="btnDedic" class="pbtn" title="Reler a dedicatória" style="display:none">💌</button>
+      <select id="profileSel" title="Perfil ativo"></select>
+      <button id="profileAdd" class="pbtn" title="Novo perfil">+</button>
+      <button id="profileRename" class="pbtn" title="Renomear perfil">✎</button>
+      <button id="profileDel" class="pbtn" title="Apagar perfil">🗑</button>
+    </div>
+    <div class="course-pick">
+      <span>curso-alvo</span>
+      <select id="cursoSel"></select>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ===================== PAINEL ===================== -->
+  <section class="tab on" id="tab-painel">
+    <div class="hero">
+      <div class="hero-grid">
+        <div class="hero-left">
+          <div class="eyebrow">Preparação · alvo real nov/2027</div>
+          <button class="fase-chip" id="heroFase" onclick="go('revisao')" title="Onde você está no plano de 16 meses — abre o Cronograma" style="display:none"></button>
+          <h1 id="heroTitle">Bom estudo, Alex.</h1>
+          <p class="lede" id="heroLede">2026 é o ciclo de diagnóstico — UFRGS 2027 e ENEM 2026 como grande simulado real. O alvo é o ano seguinte. Perfil equilibrado vence: a média harmônica pune qualquer buraco.</p>
+          <div class="hero-stats">
+            <div class="hstat"><div class="n sun" id="hsDom">0%</div><div class="l">domínio geral</div></div>
+            <div class="hstat"><div class="n blu" id="hsDue">0</div><div class="l">revisões hoje</div></div>
+            <div class="hstat"><div class="n grn" id="hsStreak">0</div><div class="l">dias seguidos</div></div>
+            <div class="hstat"><div class="n" id="hsDias">—</div><div class="l">dias p/ prova-teste</div></div>
+          </div>
+          <div class="hero-cta">
+            <button class="btn primary" onclick="go('revisao')">Revisar agora →</button>
+            <button class="btn ghost" onclick="go('edital')">Abrir mapa do edital</button>
+          </div>
+          <div class="sun-bar" aria-hidden="true"></div>
+        </div>
+        <div class="hero-right"><svg id="horizonte" viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice"></svg><span class="hero-pct" id="heroPct"></span></div>
+      </div>
+    </div>
+
+    <div id="trilhaArranque"></div>
+
+    <div class="home-discs" id="painelDiscs"></div>
+
+    <div class="grid two-col" id="painelBottom">
+      <div class="card">
+        <div class="eyebrow">Foco da semana</div>
+        <p class="note-hint" style="margin:0 0 10px">pouco domínio × peso do curso × incidência real — resolver isto rende mais ponto</p>
+        <div id="foco"></div>
+      </div>
+      <div class="card">
+        <div class="eyebrow">Estratégia viva</div>
+        <ul style="list-style:none;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:9px">
+          <li>⚖️ <b style="color:var(--ink)">Redação = peso 3</b> em quase todo curso de exatas. Treinar redação rende tanto quanto Matemática.</li>
+          <li>🎯 <b style="color:var(--ink)">Não abandone Humanas.</b> A média harmônica derruba o argumento inteiro com um único EP baixo.</li>
+          <li>📖 Leia primeiro as <b style="color:var(--ink)">4 ingressantes</b> (Krenak, Macunaíma, Ocampo, Bia C.) — ficam até ~2029.</li>
+          <li>⏱️ Matemática UFRGS: ~4min24s/questão. O gargalo é montar o modelo, não a conta.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== EDITAL ===================== -->
+  <section class="tab" id="tab-edital">
+    <div class="eyebrow">Mapa navegável · programa oficial UFRGS</div>
+    <h2 class="section">Mapa do Edital</h2>
+    <p class="section-sub">Clique numa disciplina para abrir os tópicos. Dentro dela: o círculo marca o domínio, o nome mostra os subtópicos, e o botão de nota liga à sua anotação no cofre Obsidian.</p>
+    <div class="legend">
+      <span><i></i> Não iniciado</span>
+      <span><i class="a"></i> Em progresso</span>
+      <span><i class="v"></i> Dominado</span>
+      <button class="obs" id="editalToggleAll" style="margin-left:auto" title="abrir/fechar todas as disciplinas">⊞ abrir todas</button>
+      <span class="chip" id="editalCount"></span>
+    </div>
+    <div class="grid disc-grid" id="editalDiscs"></div>
+  </section>
+
+  <!-- ===================== RECURSOS ===================== -->
+  <section class="tab" id="tab-recursos">
+    <div class="eyebrow">Curadoria · onde aprender cada assunto</div>
+    <h2 class="section">Recursos &amp; Links</h2>
+    <p class="section-sub">Canais, pessoas e sites que propagam cada assunto — categorizados e avaliados. A faixa <b>incidência</b> é uma leitura curada de quanto o tópico cai na UFRGS/ENEM: ataque primeiro o que é <b>alta</b> e você ainda não domina. No Mapa do Edital, o botão 🌐 de cada tópico abre estes links já mirados no assunto.</p>
+    <div class="legend">
+      <span><i class="v"></i> essencial</span>
+      <span><i class="a"></i> bom</span>
+      <span><i></i> complementar</span>
+      <span style="margin-left:auto" class="chip">alta · média · baixa = incidência estimada nas provas</span>
+    </div>
+    <div class="rec-controls">
+      <select id="recDisc"></select>
+      <span class="chip" id="recCount"></span>
+    </div>
+    <div id="recBody"></div>
+    <div class="card" style="margin-top:18px">
+      <div class="eyebrow">Referências de texto (servem a quase tudo)</div>
+      <div id="recSites" class="rec-sites"></div>
+    </div>
+  </section>
+
+  <!-- ===================== REVISÃO / CRONOGRAMA ===================== -->
+  <section class="tab" id="tab-revisao">
+    <div class="eyebrow">Repetição espaçada · algoritmo SM-2</div>
+    <h2 class="section">Cronograma &amp; Revisão</h2>
+    <p class="section-sub">Todo tópico que você começa a estudar entra na fila de revisão. O painel calcula quando revisar de novo — antes de esquecer, não depois. Registre também o tempo de estudo para ver o ritmo.</p>
+    <div id="faseMacro"></div>
+    <div class="split">
+      <div class="card">
+        <div class="eyebrow" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <span>Revisões devidas hoje · <span id="dueCount">0</span></span>
+          <button id="pushBtn" class="btn" style="display:none;font-size:12px;padding:6px 10px" onclick="Push.toggle()">🔔 Avise-me quando vencer</button>
+        </div>
+        <div id="dueList"></div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="eyebrow">Registrar sessão de estudo</div>
+          <div class="log-form">
+            <select id="logDisc"></select>
+            <input type="number" id="logMin" placeholder="min" min="1" value="30">
+            <button class="btn primary" onclick="logSession()">Registrar</button>
+          </div>
+          <div class="week" id="weekBars"></div>
+          <div class="note-hint" id="weekTotal"></div>
+        </div>
+        <div class="card">
+          <div class="eyebrow">Próximas revisões agendadas</div>
+          <div id="schedList"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== MÉTRICAS ===================== -->
+  <section class="tab" id="tab-metricas">
+    <div class="eyebrow">Progresso &amp; ritmo</div>
+    <h2 class="section">Métricas</h2>
+    <p class="section-sub">Onde você está e para onde está indo. Domínio ponderado pelo peso do curso-alvo — reflete o que de fato move seu argumento de concorrência.</p>
+    <div id="metOnboard"></div>
+    <div class="grid kpis" id="kpis" style="margin-bottom:22px"></div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="eyebrow">Domínio por disciplina (ponderado pelo peso do curso)</div>
+      <div class="chart-wrap"><svg id="chartDisc" viewBox="0 0 720 300" style="width:100%;min-width:560px"></svg></div>
+    </div>
+    <div class="card">
+      <div class="eyebrow">Tempo de estudo — últimos 14 dias</div>
+      <div class="chart-wrap"><svg id="chartTime" viewBox="0 0 720 220" style="width:100%;min-width:560px"></svg></div>
+    </div>
+  </section>
+
+  <!-- ===================== BANCO DE QUESTÕES ===================== -->
+  <section class="tab" id="tab-analise">
+    <div class="eyebrow">Incidência real · desempenho</div>
+    <h2 class="section">Análise</h2>
+    <p class="section-sub">O que mais cai nas provas oficiais (questões classificadas por tópico) cruzado com o seu acerto real em cada tópico — e o seu desempenho detalhado em redação, banca por banca.</p>
+    <div class="an-tabs">
+      <button class="on" data-an="q" onclick="anSubTab('q')">Questões — o que cai × seu acerto</button>
+      <button data-an="red" onclick="anSubTab('red')">Redações — seu desempenho</button>
+    </div>
+    <div id="anQuestoes">
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div class="eyebrow" style="margin:0">Concurso</div>
+          <select id="anExame"></select>
+          <div class="eyebrow" style="margin:0">Disciplina</div>
+          <select id="anDisc"></select>
+          <div class="eyebrow" style="margin:0">Ordenar por</div>
+          <select id="anOrdem">
+            <option value="cai">O que mais cai</option>
+            <option value="prio">Sua prioridade (cai muito × você erra)</option>
+          </select>
+          <span id="anResumo" style="color:var(--muted);font-size:13px"></span>
+        </div>
+      </div>
+      <div class="card an-map-card" id="anMapCard" style="margin-bottom:16px">
+        <div class="eyebrow" style="margin:0 0 3px">Mapa de risco · incidência × seu acerto</div>
+        <p class="note-hint" style="margin:0 0 12px">Cada ponto é um tópico do concurso. Quanto mais à <b>direita</b>, mais cai; quanto mais <b>abaixo</b>, menos você acerta. A <b style="color:var(--vermelho)">faixa vermelha</b> (cai muito × você erra) é onde estudar rende mais ponto. Passe o mouse para ver, clique para resolver.</p>
+        <div class="an-map-wrap"><canvas id="anMap"></canvas><div class="an-map-tip" id="anMapTip"></div></div>
+        <div class="an-map-empty" id="anMapEmpty" style="display:none"></div>
+      </div>
+      <div id="anLista"></div>
+    </div>
+    <div id="anRed" style="display:none"></div>
+  </section>
+
+  <section class="tab" id="tab-banco">
+    <div class="eyebrow">Erros são dados</div>
+    <h2 class="section">Banco de Questões</h2>
+    <p class="section-sub">Resolva provas oficiais com correção automática pelo gabarito — ou cadastre questões avulsas. O painel mede seu acerto por disciplina e mostra onde reforçar.</p>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="eyebrow">Provas oficiais · correção automática pelo gabarito</div>
+      <div class="toolbar" style="margin:12px 0 8px">
+        <select id="pvInst" onchange="onProvaInst()" title="Instituição"></select>
+        <select id="pvAno" onchange="onProvaAno()"></select>
+        <select id="pvProva" onchange="renderProva()"></select>
+        <select id="pvLE" onchange="renderProva()" title="Língua estrangeira que você faz no ENEM" style="display:none">
+          <option value="ing">Inglês</option>
+          <option value="esp">Espanhol</option>
+        </select>
+        <select id="pvModo" onchange="renderProva()" title="Quando mostrar a correção">
+          <option value="fim">Corrigir no final</option>
+          <option value="imediato">Corrigir a cada questão</option>
+        </select>
+        <a id="pvPdf" class="btn ghost" target="_blank" rel="noopener">📄 Abrir prova (PDF)</a>
+        <span class="chip" id="pvResumo"></span>
+      </div>
+      <p class="note-hint" id="pvNota" style="margin:0 0 12px">Resolva no PDF, marque as alternativas aqui e clique em Corrigir. Questão anulada conta como acerto.</p>
+      <div id="pvGrid"></div>
+      <div class="toolbar" style="margin:12px 0 0">
+        <button class="btn primary" id="pvCorrigir" onclick="corrigirProva()">Corrigir</button>
+        <button class="btn ghost" onclick="renderProva()">Limpar</button>
+        <span class="chip" id="pvScore" style="display:none"></span>
+      </div>
+      <div id="pvReso"></div>
+      <div id="pvHist" style="margin-top:14px"></div>
+    </div>
+
+    <div class="eyebrow" style="margin-bottom:8px">Banco de questões · resolva e destrave a resolução</div>
+    <p class="section-sub" style="margin-bottom:12px">3.831 questões oficiais UFRGS e ENEM já com o gabarito. Responda aqui e veja na hora se acertou. Como o painel não traz a explicação escrita, cada questão tem atalho para a <b>resolução no Google/YouTube</b> e para <b>perguntar ao Gemini</b> (abre já com a questão pronta).</p>
+    <div class="toolbar">
+      <select id="bqExame" onchange="bqExameChange()" title="Instituição"></select>
+      <select id="bqDisc" onchange="bqUserFiltro()" title="Disciplina"></select>
+      <select id="bqAno" onchange="bqUserFiltro()" title="Ano"></select>
+      <input id="bqBusca" placeholder="buscar no enunciado…" oninput="bqUserFiltro()" style="flex:1;min-width:120px">
+      <label class="chip" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="bqFig" onchange="bqUserFiltro()" style="margin:0"> só com figura</label>
+      <span class="chip" id="bqEspBox" style="display:none"></span>
+      <span class="chip" id="bqStats"></span>
+    </div>
+    <div id="bqList"></div>
+    <div id="bqMore" style="text-align:center;margin-top:14px"></div>
+
+    <div class="eyebrow" style="margin:26px 0 10px">Questões avulsas (suas)</div>
+    <div class="toolbar">
+      <button class="btn primary" onclick="openQ()">+ Nova questão</button>
+      <select id="qFilter" onchange="renderBanco()"><option value="">Todas as disciplinas</option></select>
+      <select id="qSort" onchange="renderBanco()">
+        <option value="new">Mais recentes</option>
+        <option value="worst">Menor acerto</option>
+      </select>
+      <span class="chip" id="qStats"></span>
+    </div>
+    <div id="bancoList"></div>
+  </section>
+
+  <!-- ===================== REDAÇÃO ===================== -->
+  <section class="tab" id="tab-redacao">
+    <div class="eyebrow">Peso 3 em quase todo curso · do critério ao texto, em três passos</div>
+    <h2 class="section">Redação</h2>
+    <p class="section-sub">Escolha primeiro <b>como</b> a redação será avaliada (a rubrica da banca), depois <b>o que</b> escrever (proposta oficial ou tema livre) — e escreva com correção automática estrita pela rubrica escolhida. A biblioteca reúne 202 redações nota 1000.</p>
+
+    <div class="wizard" id="redWizard"></div>
+    <div id="redWizBody" style="margin-bottom:22px"></div>
+
+    <div class="toolbar">
+      <button class="btn ghost" onclick="openRed()">+ Registrar nota manual (correção externa)</button>
+      <button class="btn ghost" onclick="anrIrDesempenho()">📈 Ver desempenho detalhado</button>
+      <span class="chip" id="redStats"></span>
+    </div>
+
+    <div class="split-red">
+      <div class="card">
+        <div class="eyebrow">Evolução (% da nota máxima)</div>
+        <div class="chart-wrap"><svg id="chartRed" viewBox="0 0 720 200" style="width:100%;min-width:520px"></svg></div>
+      </div>
+      <div class="card">
+        <div class="eyebrow">Média por competência ENEM</div>
+        <div class="chart-wrap"><svg id="chartComp" viewBox="0 0 720 200" style="width:100%;min-width:520px"></svg></div>
+        <div class="note-hint" id="compHint"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:18px">
+      <div class="eyebrow" style="margin-bottom:10px">Seu histórico</div>
+      <div id="redList" class="red-hist"></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="eyebrow">Biblioteca · modelos e propostas</div>
+      <div class="red-bib" id="redBib"></div>
+      <div class="note-hint">Método: leia 3–4 nota-mil do tema → escreva a sua cronometrada → registre aqui → extraia repertórios pro cofre (🗂 abre as notas de técnica).</div>
+    </div>
+  </section>
+
+  <!-- ===================== LEITURAS ===================== -->
+  <section class="tab" id="tab-leituras">
+    <div class="eyebrow">Anatomia das obras · ideia central · repertório · o que cai</div>
+    <h2 class="section">Leituras obrigatórias</h2>
+    <p class="section-sub">A “anatomia” de cada obra: a ideia central em uma frase, os eixos temáticos para usar como <b>repertório na redação</b> (o que acontece no livro + como encaixar) e o que costuma cair na <b>objetiva</b>. Priorize as 4 <b>ingressantes</b> (valem até ~2029). Clique numa obra para abrir.</p>
+    <div class="lt-filters" id="ltFilters"></div>
+    <div id="ltList"></div>
+  </section>
+
+  <!-- ===================== SIMULADOR ===================== -->
+  <section class="tab" id="tab-simulador">
+    <div class="eyebrow">Média harmônica ponderada · escore padronizado</div>
+    <h2 class="section">Simulador de Argumento</h2>
+    <p class="section-sub">Ajuste seu escore padronizado (EP) estimado em cada prova e veja o argumento de concorrência. A média é <b>harmônica</b>: um EP baixo em qualquer prova puxa tudo para baixo — é a matemática que prova por que perfil equilibrado vence.</p>
+    <div class="sim-grid">
+      <div class="card">
+        <div style="display:flex;font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:1px;padding-bottom:6px;border-bottom:1px solid var(--border)">
+          <span style="width:150px">Prova</span><span style="flex:1">Escore padronizado (EP)</span><span style="width:52px;text-align:right">EP</span><span style="width:44px;text-align:center">peso</span>
+        </div>
+        <div id="simRows"></div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn ghost" onclick="simPreset(500)">Todos 500 (média)</button>
+          <button class="btn ghost" onclick="simPreset(600)">Todos 600</button>
+          <button class="btn ghost" onclick="simFromDom()">Estimar do meu domínio</button>
+        </div>
+      </div>
+      <div class="sim-out">
+        <div class="eyebrow">Argumento de concorrência</div>
+        <div class="big" id="simBig">—</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px" id="simCurso"></div>
+        <div style="margin-top:14px;font-size:12.5px;color:var(--muted);line-height:1.6">
+          <div>Média <b>aritmética</b>: <span class="mono" id="simArit">—</span></div>
+          <div>Menor EP (gargalo): <span class="mono" id="simMin">—</span></div>
+        </div>
+        <div class="warn" id="simWarn">⚠️ EP abaixo de 500 em prova de peso alto está sangrando seu argumento. É aqui que o perfil equilibrado paga.</div>
+        <div style="margin-top:16px;font-size:11px;color:var(--faint);border-top:1px solid var(--border-soft);padding-top:12px">
+          EP = ((acertos − média) / desvio) × 100 + 500. Média da prova ⇒ 500. Pesos aproximados — conferir Manual do Candidato (ago/2026).
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot">
+    <span id="footEstado">Seu progresso fica neste navegador (localStorage).</span>
+    <button class="chip" style="margin-left:10px" onclick="exportData()">exportar backup</button>
+    <button class="chip" onclick="importData()">importar</button>
+    <button class="chip" style="border-color:#5a3030;color:var(--vermelho)" onclick="resetAll()">zerar</button>
+  </div>
+</main>
+
+<!-- Navegação inferior (só no celular). As 10 abas são 3 modos: estudar, testar e medir.
+     A tira de topo que rolava de lado escondia metade do painel; aqui tudo está a 1–2 toques. -->
+<nav id="botNav" aria-label="Navegação">
+  <button data-go="painel"><span class="bi">🏠</span>Painel</button>
+  <button data-grp="estudar"><span class="bi">📚</span>Estudar</button>
+  <button data-go="banco"><span class="bi">🎯</span>Questões</button>
+  <button data-go="redacao"><span class="bi">✍️</span>Redação</button>
+  <button data-grp="medir"><span class="bi">📊</span>Medir</button>
+</nav>
+<dialog id="dlgGrupo" aria-label="Escolher tela">
+  <div class="sheet">
+    <div class="sheet-h"><span id="sheetTit"></span>
+      <button class="chip" onclick="document.getElementById('dlgGrupo').close()">fechar</button></div>
+    <div id="sheetItens"></div>
+  </div>
+</dialog>
+
+<!-- Dialog: questão -->
+<dialog id="dlgQ">
+  <div class="dlg-h">Nova questão</div>
+  <div class="dlg-b">
+    <div style="display:flex;gap:10px">
+      <div style="flex:1"><label>Disciplina</label><select id="dqDisc"></select></div>
+      <div style="flex:1.3"><label>Tópico do edital</label><select id="dqTopico"></select></div>
+    </div>
+    <label>Enunciado (ou referência: ex. "UFRGS 2023 Q12")</label><textarea id="dqEn" rows="3"></textarea>
+    <label>Gabarito / resolução</label><textarea id="dqAns" rows="2"></textarea>
+    <label>Tags (vírgula)</label><input id="dqTags" placeholder="funções, gráfico">
+  </div>
+  <div class="dlg-f">
+    <button class="btn ghost" onclick="dlgQ.close()">Cancelar</button>
+    <button class="btn primary" onclick="saveQ()">Salvar</button>
+  </div>
+</dialog>
+
+<!-- Dialog: registrar redação -->
+<dialog id="dlgRed">
+  <div class="dlg-h">Registrar redação</div>
+  <div class="dlg-b">
+    <div style="display:flex;gap:10px">
+      <div style="flex:1"><label>Data</label><input type="date" id="drData"></div>
+      <div style="flex:1"><label>Tipo</label>
+        <select id="drTipo" onchange="redTipoUI()">
+          <option value="enem">ENEM (5 competências)</option>
+          <option value="ufrgs">UFRGS</option>
+          <option value="treino">Treino livre</option>
+        </select></div>
+    </div>
+    <label>Tema</label><input id="drTema" placeholder='ex.: "Herança africana no Brasil (ENEM 2024)"'>
+    <div id="drCompBox"></div>
+    <div id="drNotaBox" style="display:none;gap:10px">
+      <div style="flex:1"><label>Nota</label><input type="number" id="drNota" min="0" step="0.5"></div>
+      <div style="flex:1"><label>Nota máxima</label><input type="number" id="drMax" min="1" step="0.5"></div>
+    </div>
+    <label>Observações (opcional)</label><textarea id="drObs" rows="2" placeholder="onde travei, repertório usado…"></textarea>
+  </div>
+  <div class="dlg-f">
+    <button class="btn ghost" onclick="dlgRed.close()">Cancelar</button>
+    <button class="btn primary" onclick="saveRed()">Salvar</button>
+  </div>
+</dialog>
+
+<!-- Dialog: nota Obsidian -->
+<dialog id="dlgCorrige" style="max-width:760px">
+  <div class="dlg-h">Passo 3 · Escrever &amp; corrigir</div>
+  <div class="dlg-b">
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:160px"><label>Banca (define a rubrica)</label>
+        <select id="crBanca" onchange="crBancaUI()"></select></div>
+      <div style="flex:2;min-width:200px"><label>Tema</label>
+        <input id="crTema" placeholder='ex.: "As relações sociais por meio da solidariedade (FUVEST 2025)"'></div>
+    </div>
+    <div class="note-hint" id="crRubrica" style="margin:6px 0"></div>
+    <div id="crProp" class="note-hint" style="display:none;background:var(--raised);border:1px solid var(--border-soft);border-radius:9px;padding:10px 12px;margin:0 0 10px;line-height:1.55"></div>
+    <label>Sua redação</label>
+    <textarea id="crTexto" rows="14" placeholder="Cole ou digite sua redação aqui… (o rascunho fica salvo ao fechar)" style="width:100%;font-size:14px;line-height:1.6"></textarea>
+    <div id="crResultado" style="margin-top:12px"></div>
+  </div>
+  <div class="dlg-f">
+    <button class="btn ghost" onclick="dlgCorrige.close()">Fechar</button>
+    <button class="btn primary" onclick="crRegistrarNota()">Registrar nota manual</button>
+  </div>
+</dialog>
+<!-- Dialog: reler correção salva -->
+<dialog id="dlgReler" style="max-width:700px">
+  <div class="dlg-h" id="rlTit">Correção</div>
+  <div class="dlg-b" id="rlBody" style="max-height:68vh;overflow:auto"></div>
+  <div class="dlg-f">
+    <button class="btn ghost" onclick="dlgReler.close()">Fechar</button>
+    <button class="btn primary" id="rlReescrever">✏ Reescrever este tema</button>
+  </div>
+</dialog>
+<dialog id="dlgLeitura">
+  <div class="dlg-h" id="dlLeiTit">Redação</div>
+  <div class="dlg-b">
+    <div class="eyebrow" id="dlLeiMeta" style="margin-bottom:10px"></div>
+    <div id="dlLeiCorpo" style="max-height:60vh;overflow:auto;line-height:1.7;font-size:14.5px;white-space:pre-wrap;text-align:justify"></div>
+  </div>
+  <div class="dlg-f">
+    <button class="btn ghost" onclick="dlgLeitura.close()">Fechar</button>
+  </div>
+</dialog>
+<dialog id="dlgNote">
+  <div class="dlg-h" id="dnTitle">Nota do tópico</div>
+  <div class="dlg-b">
+    <div id="dnBase" class="nota-base"></div>
+    <label>✍️ Minhas anotações <span class="lbl-sub">— salvas neste aparelho</span></label>
+    <textarea id="dnText" rows="5" placeholder="Escreva aqui suas anotações, dúvidas e macetes. É só seu e fica salvo."></textarea>
+  </div>
+  <div class="dlg-f">
+    <a id="dnObs" class="obs-link" href="#" target="_blank" rel="noopener" title="Só funciona para quem tem o app Obsidian instalado com o cofre.">🗂 abrir no Obsidian</a>
+    <span style="flex:1"></span>
+    <button class="btn ghost" onclick="dlgNote.close()">Fechar</button>
+    <button class="btn primary" onclick="saveNote()">Salvar anotação</button>
+  </div>
+</dialog>
+
+<!-- Dialog: tutorial "Como usar" (feito para quem abre pelo link, sem Obsidian) -->
+<dialog id="dlgAjuda">
+  <div class="dlg-h">👋 Como usar o painel</div>
+  <div class="ajuda-b">
+    <div class="aj-lede">Este é o seu <b>painel de estudos</b> para a UFRGS e o ENEM. Ele guarda o que você já estudou, tem resumos prontos por assunto e deixa você fazer suas próprias anotações — <b>tudo direto no navegador, sem instalar nada</b>.</div>
+
+    <div class="ajuda-step">
+      <div class="aj-ico">🗺️</div>
+      <div><div class="aj-tt">1. Ache um assunto</div>
+      <div class="aj-tx">Toque na aba <b>Mapa do Edital</b> (no celular, em <b>Estudar → Mapa do Edital</b>). Toque numa matéria (ex.: Biologia) para abrir a lista de assuntos dela.</div></div>
+    </div>
+
+    <div class="ajuda-step">
+      <div class="aj-ico">📖</div>
+      <div><div class="aj-tt">2. Abra as notas do assunto</div>
+      <div class="aj-tx">Ao lado de cada assunto há um botão <b>📖 ler</b> (quando já existe um resumo pronto) ou <b>✎ nota</b>. Toque nele: abre uma janela com o <b>resumo, fórmulas e as pegadinhas clássicas da prova</b>. É só ler. <i>Não precisa de Obsidian nem de nenhum outro programa.</i></div></div>
+    </div>
+
+    <div class="ajuda-step">
+      <div class="aj-ico">✍️</div>
+      <div><div class="aj-tt">3. Faça suas anotações</div>
+      <div class="aj-tx">Na mesma janela, embaixo do resumo, há a caixa <b>“Minhas anotações”</b>. Escreva o que quiser (dúvidas, macetes, o que errou) e toque em <b>Salvar anotação</b>. Fica guardado — quando você voltar, está tudo lá.</div></div>
+    </div>
+
+    <div class="ajuda-step">
+      <div class="aj-ico">🟢</div>
+      <div><div class="aj-tt">4. Marque seu progresso</div>
+      <div class="aj-tx">A <b>bolinha</b> à esquerda de cada assunto mostra como você está. Toque nela para avançar: cinza (não começou) → <b>amarelo</b> (estudando) → <b>verde</b> (dominado). O painel usa isso para montar suas revisões.</div></div>
+    </div>
+
+    <div class="ajuda-step">
+      <div class="aj-ico">📝</div>
+      <div><div class="aj-tt">5. Treine com questões</div>
+      <div class="aj-tx">Na aba <b>Questões</b> você resolve provas oficiais antigas da UFRGS e do ENEM — a correção é automática pelo gabarito.</div></div>
+    </div>
+
+    <div class="ajuda-step">
+      <div class="aj-ico">🎨</div>
+      <div><div class="aj-tt">6. Deixe do seu jeito</div>
+      <div class="aj-tx">Lá em cima, os botões <b>🌙 🌊 ☀️ 🌈</b> mudam a cor e os <b>📖 📐 🕊️ 🌌</b> mudam o estilo. Escolha o que for mais gostoso de ler — não muda nada dos seus dados.</div></div>
+    </div>
+
+    <div class="ajuda-note">💾 <b>Importante:</b> seu progresso e suas anotações ficam salvos <b>neste aparelho/navegador</b>. Se for trocar de celular ou computador, use <b>Exportar backup</b> (lá no rodapé da página) e <b>Importar</b> no outro. Se você tiver login, ele sincroniza sozinho entre os aparelhos.</div>
+  </div>
+  <div class="dlg-f">
+    <button class="btn primary" onclick="dlgAjuda.close()">Entendi, bora estudar 🚀</button>
+  </div>
+</dialog>
+
+<!-- Dialog: relações do tópico (pré-requisitos + interdisciplinar) -->
+<dialog id="dlgRel">
+  <div class="dlg-h" id="dlRelTit">Relações</div>
+  <div class="dlg-b" id="dlRelBody"></div>
+  <div class="dlg-f"><button class="btn ghost" onclick="dlgRel.close()">Fechar</button></div>
+</dialog>
+
+<!-- Dialog: onde aprender (recursos do tópico) -->
+<dialog id="dlgRec">
+  <div class="dlg-h" id="dnRecTitle">Onde aprender</div>
+  <div class="dlg-b" id="dnRecBody"></div>
+  <div class="dlg-f">
+    <button class="btn primary" onclick="dlgRec.close()">Fechar</button>
+  </div>
+</dialog>
+
+<!-- Dialog: bilhete (kit presenteável — mensagens do seed na correção de prova) -->
+<dialog id="dlgBilhete">
+  <div class="dlg-h">💌 Um bilhete pra você</div>
+  <img id="dlBilheteImg" alt="" style="display:none;width:100%;max-height:300px;object-fit:cover;border-radius:12px;margin:10px 0 4px">
+  <div class="dlg-b" id="dlBilheteBody" style="font-family:var(--serif);font-size:15px;line-height:1.7"></div>
+  <div class="dlg-f"><button class="btn ghost" onclick="dlgBilhete.close()">Fechar ❤</button></div>
+</dialog>
+
+<!-- Dedicatória (kit presenteável): só aparece quando perfil-seed.js define uma -->
+<div id="dedic" hidden>
+  <div class="dedic-in">
+    <div class="dedic-kicker">— uma mensagem antes de começar —</div>
+    <div id="dedicTitulo"></div>
+    <div id="dedicMsg"></div>
+    <div id="dedicAss"></div>
+    <div id="dedicFotos"></div>
+    <button class="dedic-go" onclick="closeDedicatoria()">Abrir meu painel ✨</button>
+    <div class="dedic-hint">você pode reler isto quando quiser no 💌 do topo</div>
+  </div>
+</div>
+
+<script src="fases-data.js"></script>
+<script src="edital-data.js"></script>
+<script src="notas-data.js"></script>
+<script src="relacoes-data.js"></script>
+<script src="gabaritos-data.js"></script>
+<script src="gabaritos-enem-data.js"></script>
+<script src="frequencia-data.js"></script>
+<script src="redacao-data.js"></script>
+<script src="redacoes-notamil-data.js"></script>
+<script src="rubricas-redacao-data.js"></script>
+<script src="propostas-ufrgs-data.js"></script>
+<script src="textos-modelo-data.js"></script>
+<script src="recursos-data.js"></script>
+<script src="leituras-data.js"></script>
+<script src="banco-questoes-data.js"></script>
+<script src="perfil-seed.js"></script>
+<script src="redacoes-corpus.js"></script>
+<!-- app.js foi fatiado (2026-07-16): 8 <script> globais em ORDEM (sem ES modules — file://
+     bloqueia import em origem opaca). Core primeiro (define $/S), app.js por último (o boot). -->
+<script src="app-core.js"></script>
+<script src="app-edital.js"></script>
+<script src="app-analise.js"></script>
+<script src="app-plano.js"></script>
+<script src="app-banco.js"></script>
+<script src="app-redacao.js"></script>
+<script src="app-painel.js"></script>
+<script src="app.js"></script>
+<script src="qr.js"></script>
+<script src="sync.js"></script>
+<script src="push.js"></script>
+</body>
+</html>
