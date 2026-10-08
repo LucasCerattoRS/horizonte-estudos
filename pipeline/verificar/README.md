@@ -15,7 +15,6 @@ node pipeline/verificar/probe-nav.js       # eixo data-nav (lateral/topo/inferio
                                            #   ortogonal ao tema/Look, persiste no reload, INERTE no celular.
                                            #   Sobe o PRÓPRIO servidor (porta aleatória) — NÃO precisa do 8899 acima.
 node pipeline/verificar/probe-pwa.js       # manifest, service worker, cache, offline, file://
-node pipeline/verificar/test-rubricas.js   # agregação multi-avaliador (não precisa de navegador)
 
 # ...menos esta, que SOBE E MATA o próprio servidor (não use o de cima com ela):
 node pipeline/verificar/probe-offline-1visita.js   # abriu 1x com internet → ficou sem rede: o app funciona?

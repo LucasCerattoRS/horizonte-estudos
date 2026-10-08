@@ -57,6 +57,43 @@ Se você quer **aprender** com este projeto, comece por:
 3. `docs/estudo/*.explicado.md` — cada arquivo-fonte comentado em profundidade
 4. `docs/estudo/EXERCICIOS.md` + `LABORATORIO.md` — para praticar em cima do código
 
+## Estado
+
+Versão pública e anonimizada de um painel que está em uso real. O código roda como está;
+o deploy é **manual** (`wrangler pages deploy`) — push neste repositório não publica nada.
+
+**Tecnologias:** HTML + CSS + JavaScript puro, Service Worker, `localStorage`, Cloudflare
+Pages Functions + D1 (SQLite) + Worker com cron para push; pipeline em Node e Python.
+
+**Como verificar:** as sondas de `pipeline/verificar/` dirigem um Chromium real por CDP
+(ver o `README.md` de lá). Exemplo, a partir da raiz:
+
+```bash
+python -m http.server 8899 &              # as sondas esperam a porta 8899
+node pipeline/verificar/audit-mobile.js   # celular 390px: vazamento, alvo pequeno, campo < 16px
+```
+
+## Pendências
+
+- O painel original tem uma versão-presente com fotos e bilhetes pessoais; esse material
+  **não** entra aqui (é privado) — no modo `--kit` as telas que dependem dele ficam vazias.
+- `test-qr.js` precisa de um venv com `opencv-python-headless` e assume caminho Linux (`.venv/bin/python`).
+- Revisão de 08/10/2026: campos de formulário no celular estavam com fonte 12,5–14px, o que
+  faz o iPhone dar zoom ao focar. Corrigido no `@media(hover:none)` de `painel/index.html`
+  e vigiado pelo `audit-mobile.js` (achado `campo-zoom-ios`). Removido o `test-rubricas.js`,
+  que testava a correção de redação por IA (recurso que saiu do projeto).
+
+## Para estudar
+
+1. **Repetição espaçada SM-2** — `painel/app-plano.js`, `reviewCard` (início do arquivo).
+   Explicado em `docs/estudo/app-plano.explicado.md`.
+2. **Média harmônica ponderada** — `painel/app-painel.js`, `computeSim`: uma prova fraca
+   derruba o escore mais do que na média comum.
+3. **Merge de estado entre aparelhos** — `painel/sync.js`, `mergeSecao`: regra de conflito por
+   seção. Explicado em `docs/estudo/sync.explicado.md`.
+4. **Service Worker "rede primeiro"** — `painel/sw.js`, ouvinte `fetch`: navegação tenta a rede
+   e cai no cache offline; `/api/` nunca é cacheado. Ver `docs/estudo/sw.explicado.md`.
+
 ## Licença
 
 MIT — direitos autorais reservados ao autor, uso, cópia e modificação liberados

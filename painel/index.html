@@ -744,6 +744,10 @@ dialog::backdrop{background:rgba(6,8,12,.7);backdrop-filter:blur(3px)}
      min-height não faz efeito nenhum. */
   a.badge-b{min-height:32px;display:inline-flex;align-items:center}
   .sim-row input[type=range]{height:34px}
+  /* Campo com fonte < 16px faz o Safari do iPhone dar ZOOM ao focar (e não volta sozinho).
+     !important porque precisa vencer o style inline do #crTexto (14px) e os seletores .x input.
+     Conferido por pipeline/verificar/audit-mobile.js (achado "campo-zoom-ios"). */
+  input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:16px!important}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto}}
 /* ---------- provas oficiais (simulado c/ gabarito) ---------- */

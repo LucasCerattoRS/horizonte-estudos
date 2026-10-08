@@ -44,6 +44,12 @@ const { open } = require("./cdp.js");
           if (!coberto) probs.push({tipo:"alvo-pequeno", el: e.tagName+"."+(e.className||"").toString().slice(0,24), txt:(e.textContent||"").trim().slice(0,14), h: Math.round(b.height)});
         }
       });
+      // 4. campo de texto < 16px: o Safari do iPhone dá zoom ao focar
+      sec.querySelectorAll("input,select,textarea").forEach(e => {
+        if (/checkbox|radio|range|hidden/.test(e.type||"")) return;
+        const fs = parseFloat(getComputedStyle(e).fontSize);
+        if (fs < 16) probs.push({tipo:"campo-zoom-ios", el: e.tagName+"#"+(e.id||"")+"."+(e.className||"").toString().slice(0,20), fs});
+      });
       // dedup por tipo+el
       const seen = new Set(); const uniq = [];
       probs.forEach(x => { const k = x.tipo+"|"+(x.el||""); if (!seen.has(k)) { seen.add(k); uniq.push(x); } });

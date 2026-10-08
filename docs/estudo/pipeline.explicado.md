@@ -194,7 +194,7 @@ emular o dispositivo por completo) — não a aproximação conveniente que ment
 | `probe-pwa.js` | manifest, service worker, cache, `file://` |
 | `probe-offline-1visita.js` | abriu 1× com internet → **sem rede**: o app funciona? (mata o servidor) |
 | `test-qr.js` | gera o QR e manda o **OpenCV ler de volta** (verificação por decodificação) |
-| `test-rubricas.js` | a agregação multi-avaliador (sem navegador) |
+| ~~`test-rubricas.js`~~ | removido: testava a correção por IA, que saiu do projeto |
 | `auditar_painel.js` | auditoria geral |
 
 **`test-qr.js` merece destaque** (visto no [`qr.explicado.md`](qr.explicado.md)): verifica o QR
