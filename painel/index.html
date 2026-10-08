@@ -730,10 +730,13 @@ dialog::backdrop{background:rgba(6,8,12,.7);backdrop-filter:blur(3px)}
 
 /* Alvos de toque. Medido num viewport REAL de 390px com pointer:coarse: chips de 22px,
    chips de tópico de 18px, "abrir todas" de 25px — abaixo do mínimo confortável no dedo.
+   ("abrir todas" tem classe .obs mas não fica dentro de .topic: o seletor .topic .obs não o
+   pegava e ele seguia com 15px; o CI das sondas achou em 08/10/2026. Por isso o #id abaixo.)
    Só vale onde não há mouse; no desktop a densidade continua a mesma. */
 @media(hover:none){
   .btn,.chip,.pv-opt,.tag.tlink,.rt-go,.topic .obs,.lt-filters button,.an-tabs button,
-  .red-filtros button,.wiz-nav button,.bq-links a,.bq-links button,.fase-chip{min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:5px}
+  .red-filtros button,.wiz-nav button,.bq-links a,.bq-links button,.fase-chip,
+  #editalToggleAll{min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:5px}
   .chip,.tag.tlink{padding:6px 12px}
   /* precisa repetir o seletor .toolbar: media query não soma especificidade,
      e .toolbar input[type=checkbox] (lá em cima) venceria o input[type=checkbox] daqui. */
