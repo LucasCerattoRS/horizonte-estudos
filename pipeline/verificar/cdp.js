@@ -55,7 +55,8 @@ async function open(opt = {}){
   ];
   const proc = spawn(CHROME, args, { stdio: "ignore" });
   let ws = null;
-  for (let i = 0; i < 60 && !ws; i++){
+  // Até 30 s: na 1ª abertura numa máquina nova (o CI do GitHub) o Chrome passou dos 9 s de antes.
+  for (let i = 0; i < 200 && !ws; i++){
     await sleep(150);
     try { ws = JSON.parse(await get(`http://127.0.0.1:${port}/json/list`))
       .find(t => t.type === "page").webSocketDebuggerUrl; } catch { /* subindo */ }
