@@ -44,24 +44,34 @@ function get(url){
   }).on("error", rej));
 }
 
-async function open(opt = {}){
+// Sobe o Chrome e espera o endpoint CDP. No CI do GitHub a subida às vezes trava (já passou
+// de 30 s): tenta 2 vezes e, se falhar, mostra o fim do stderr do Chrome em vez de só "não subiu".
+async function subir(opt){
   const port = 9222 + Math.floor(Math.random() * 500);
   const args = [
     "--headless=new", `--remote-debugging-port=${port}`, "--no-sandbox",
-    "--disable-gpu", "--hide-scrollbars", "--no-first-run",
+    "--disable-gpu", "--hide-scrollbars", "--no-first-run", "--disable-dev-shm-usage",
     `--user-data-dir=/tmp/cdp-${port}`,
     `--window-size=${opt.mobile ? "390,844" : "1400,1000"}`,
     "about:blank",
   ];
-  const proc = spawn(CHROME, args, { stdio: "ignore" });
+  const proc = spawn(CHROME, args, { stdio: ["ignore", "ignore", "pipe"] });
+  let err = "";
+  proc.stderr.on("data", d => { err = (err + d).slice(-2000); });
   let ws = null;
-  // Até 30 s: na 1ª abertura numa máquina nova (o CI do GitHub) o Chrome passou dos 9 s de antes.
   for (let i = 0; i < 200 && !ws; i++){
     await sleep(150);
     try { ws = JSON.parse(await get(`http://127.0.0.1:${port}/json/list`))
       .find(t => t.type === "page").webSocketDebuggerUrl; } catch { /* subindo */ }
   }
-  if (!ws) { proc.kill(); throw new Error("Chromium não subiu"); }
+  if (!ws) proc.kill("SIGKILL");
+  return { proc, ws, err };
+}
+
+async function open(opt = {}){
+  let { proc, ws, err } = await subir(opt);
+  if (!ws) { console.error("Chromium não subiu na 1ª tentativa; tentando de novo. stderr:\n" + err); ({ proc, ws, err } = await subir(opt)); }
+  if (!ws) throw new Error("Chromium não subiu (2 tentativas). Fim do stderr:\n" + err);
 
   const sock = new WebSocket(ws);
   await new Promise((r, j) => { sock.onopen = r; sock.onerror = j; });
