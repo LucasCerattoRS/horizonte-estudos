@@ -238,13 +238,18 @@ function aparenciaSync(){
 /* Cobre a tela com o "pôr-do-sol" e faz o swap no pico, escondendo o reflow.
    Respeita prefers-reduced-motion (aplica na hora, sem animação). */
 let _wipeT = [];
+let _wipePend = null;   // a troca agendada que ainda não rodou
 function withWipe(apply){
   const fx = document.getElementById("fxWipe");
   const rm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Duas trocas em menos de 220ms (tema e depois Look, por exemplo): antes, o clearTimeout
+  // abaixo CANCELAVA a primeira e ela se perdia. Agora a pendente roda na hora, antes da nova.
+  if(_wipePend){ const f = _wipePend; _wipePend = null; f(); }
   if(!fx || rm){ apply(); return; }
   _wipeT.forEach(clearTimeout); _wipeT = [];
   fx.classList.add("on");
-  _wipeT.push(setTimeout(apply, 220));                          // troca no pico
+  _wipePend = apply;
+  _wipeT.push(setTimeout(() => { if(_wipePend === apply){ _wipePend = null; apply(); } }, 220)); // troca no pico
   _wipeT.push(setTimeout(() => fx.classList.remove("on"), 430));
 }
 function applyTema(t){

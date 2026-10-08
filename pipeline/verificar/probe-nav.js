@@ -140,7 +140,8 @@ const MEASURE = `
   check(a.navAttr === "topo", `ortogonal: trocar Look NÃO mexeu no nav (nav=${a.navAttr})`);
 
   // ---------- 3) persistência (reload → boot pré-paint reaplica) ----------
-  await p.eval(`setTema("escuro"); setEstilo("literaria"); setNav("inferior"); return localStorage.getItem("painelNav");`);
+  await p.eval(`setTema("escuro"); setEstilo("literaria"); setNav("inferior"); return 1;`);
+  await sleep(680);   // a troca roda no pico da animação (220ms): ler antes disso pega o valor antigo
   const ls = await p.eval(`return localStorage.getItem("painelNav");`);
   await p.goto(URL); await sleep(1200);
   const after = await p.eval(`return document.documentElement.dataset.nav || null;`);
