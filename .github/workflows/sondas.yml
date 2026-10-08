@@ -1,0 +1,29 @@
+# Abre o painel num Chrome headless de verdade e roda as sondas de pipeline/verificar/.
+name: sondas
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  sondas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CHROME: /usr/bin/google-chrome
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: servidor local na 8899 (as sondas audit e largura esperam essa porta)
+        run: |
+          python3 -m http.server 8899 > /tmp/srv.log 2>&1 &
+          for i in $(seq 1 20); do curl -fs http://127.0.0.1:8899/painel/index.html > /dev/null && break; sleep 0.5; done
+      - name: celular 390px (vazamento, alvo pequeno, zoom do iPhone, erro de JS)
+        run: node pipeline/verificar/audit-mobile.js
+      - name: tela larga (conteúdo centrado de 2560 a 1100px)
+        run: node pipeline/verificar/probe-largura.js
+      - name: eixo de navegação (sobe o próprio servidor)
+        run: node pipeline/verificar/probe-nav.js
+      - name: abriu uma vez e ficou sem rede (sobe e mata o próprio servidor)
+        run: node pipeline/verificar/probe-offline-1visita.js

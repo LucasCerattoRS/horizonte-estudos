@@ -62,4 +62,7 @@ const { open } = require("./cdp.js");
   await p.eval(`go("metricas")`); await p.shot("/tmp/m-metricas.png");
   await p.eval(`go("revisao")`);  await p.shot("/tmp/m-crono.png");
   p.close();
-})();
+  // Código de saída para o CI: qualquer achado ou erro de JS reprova.
+  const errosJs = p.errors.filter(e => !/404/.test(e));
+  process.exit(achados.length || errosJs.length ? 1 : 0);
+})().catch(e => { console.error("ERRO NA AUDITORIA:", e); process.exit(2); });
