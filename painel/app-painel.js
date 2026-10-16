@@ -105,7 +105,7 @@ function renderTrilha(){
   }
   const wk=TRILHA.semanas[n-1];
   const subs=wk.nucleo.map(trilhaSubj);
-  const chips=subs.map((s,i)=>`<button data-i="${i}" style="display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:999px;border:1px solid ${i===0?'var(--sunset)':'var(--line,rgba(128,128,128,.28))'};background:var(--raised);color:var(--ink);font:inherit;font-size:13px;cursor:pointer;font-weight:${i===0?'700':'500'}"><span>${s.icon}</span>${esc(s.nome)}</button>`).join("");
+  const chips=subs.map((s,i)=>`<button data-i="${i}" style="display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:7px 12px;border-radius:999px;border:1px solid ${i===0?'var(--sunset)':'var(--line,rgba(128,128,128,.28))'};background:var(--raised);color:var(--ink);font:inherit;font-size:13px;cursor:pointer;font-weight:${i===0?'700':'500'}"><span>${s.icon}</span>${esc(s.nome)}</button>`).join("");
   const dots=TRILHA.semanas.map((_,i)=>`<i style="width:${i===n-1?'18px':'7px'};height:7px;border-radius:999px;background:${i<=n-1?'var(--sunset)':'var(--line,rgba(128,128,128,.3))'};display:inline-block;opacity:${i<=n-1?1:.5}"></i>`).join("");
   const primeiro=subs[0];
   box.innerHTML=`

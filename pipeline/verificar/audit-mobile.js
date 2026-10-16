@@ -35,7 +35,7 @@ const { open } = require("./cdp.js");
         const st = getComputedStyle(e), b = e.getBoundingClientRect();
         if (b.width === 0 && b.height === 0) return;              // realmente oculto (display:none)
         if (+st.opacity < 0.15) probs.push({tipo:"invisivel-no-toque", el: e.tagName+"."+(e.className||"").toString().slice(0,28), txt: (e.textContent||"").trim().slice(0,18)});
-        else if (b.height < 32 && b.height > 0) {
+        else if (b.height < 44 && b.height > 0) {
           // Um checkbox/radio dentro de <label> não é o alvo: tocar no rótulo já alterna.
           // Se o label cumpre os 32px, o controle só precisa dos 24px da WCAG 2.5.8.
           const lb = e.closest("label");
