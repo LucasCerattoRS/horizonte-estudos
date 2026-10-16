@@ -125,6 +125,10 @@
       if (rts > lastTs) lastTs = rts;               // acompanha o relógio do outro aparelho (evita clock-skew perder update)
       if (!(secao in ts) || rts > ts[secao]) { mergeSecao(secao, sv.data); ts[secao] = rts; mudou = true; }
     }
+    // o remoto passa pela MESMA sanitização do localStorage (estado.js): sessions null, curso
+    // inexistente ou min "30" vindos do servidor não podem quebrar a tela nem concatenar totais.
+    if (mudou && typeof normalizaEstado === "function" && typeof DEFAULT_STATE !== "undefined" && typeof CURSOS !== "undefined")
+      S = normalizaEstado(S, DEFAULT_STATE, CURSOS);
     setTs(ts);
     if (mudou && typeof save === "function") save();   // persiste; onSaved é no-op (guard _applying)
     Sync._applying = false;
