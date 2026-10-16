@@ -17,8 +17,9 @@ function topicId(discId, ei, ti){ return `${discId}.${ei}.${ti}`; }
 
 /* ---------- Perfis ---------- */
 const profKey = id => `${LS_PREFIX}__${id}`;
+const INDICE_PADRAO = { active:"alex", profiles:[{ id:"alex", nome:"Alex", emoji:"🌅" }] };
 function loadIndex(){
-  try{ const raw = localStorage.getItem(LS_INDEX); if(raw) return JSON.parse(raw); }catch(e){}
+  try{ const raw = localStorage.getItem(LS_INDEX); if(raw) return normalizaIndice(JSON.parse(raw), INDICE_PADRAO); }catch(e){}
   const legacy = localStorage.getItem(LS_LEGACY);
   // 1ª execução com perfil-seed.js (kit presenteável): cria o perfil da pessoa, sem "Alex"
   const seed = (typeof PERFIL_SEED!=="undefined" && PERFIL_SEED && PERFIL_SEED.nome && !legacy) ? PERFIL_SEED : null;
@@ -74,7 +75,7 @@ function load(){
     // vira "geral" uma única vez. A marca vem no DEFAULT_STATE, então escolher CiC de
     // propósito DEPOIS disto fica salvo junto com ela e é respeitado para sempre.
     const herdouCic = p.curso === "cic" && !("migCursoGeral" in p);
-    const s = Object.assign(structuredClone(DEFAULT_STATE), p);
+    const s = normalizaEstado(p, DEFAULT_STATE, CURSOS);   // JSON de outro formato / campo null não derruba o boot
     if(herdouCic) s.curso = "geral";
     return s;
   }catch(e){ console.warn("load falhou",e); return structuredClone(DEFAULT_STATE); }

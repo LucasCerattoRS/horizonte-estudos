@@ -90,7 +90,7 @@ moldura inteira some (sem buraco); a imagem do bilhete idem — fica só o texto
 1. No pendrive estão o `perfil-seed.js` e a pasta de imagens. Copie para `painel/`:
    `perfil-seed.js` e, p.ex., `painel/fotos/…` (os caminhos em `dedicatoria.fotos` e
    `mensagens.imagens.meta|animo` do seed são relativos a `painel/`).
-2. **Suba o `CACHE_V` em `painel/sw.js`** (hoje `horizonte-v31` → `v32`). Sem isso, quem já
+2. **Suba o `CACHE_V` em `painel/sw.js`** (hoje `horizonte-v32` → `v33`). Sem isso, quem já
    abriu o site tem o 404 do `perfil-seed.js` guardado no cache do service worker e só vê o
    kit na 2ª recarga.
 3. Se quiser as imagens funcionando offline, acrescente-as à lista `DADOS` do `sw.js`
@@ -108,6 +108,26 @@ moldura inteira some (sem buraco); a imagem do bilhete idem — fica só o texto
   ainda o tem. É decisão de projeto (não perder progresso), mas vale saber.
 - Sessões de estudo gravadas antes desta revisão usam data UTC; as novas usam data local.
   Nada é reescrito; no máximo uma sessão noturna antiga aparece um dia à frente.
+
+## Auditoria adversarial de 16/10/2026
+
+Achados reproduzidos (cada um com teste que falha no código antigo e passa agora):
+
+1. **Estado corrompido derrubava o boot** — `app-core.js` (`loadIndex`, `load`) e `app.js`
+   (`importData`) aceitavam qualquer JSON: índice `{}`/`null`, `sessions:null`, `curso` removido
+   ou sessão `null` davam `TypeError` e tela em branco (só limpando os dados do site). Agora
+   `painel/estado.js` sanitiza (índice, listas, mapas, curso, sessões inválidas). Testes:
+   `test/estado.test.js` e `pipeline/verificar/test-estado-corrompido.js` (11 variantes no Chromium).
+2. **Minutos da sessão** — `app-plano.js` `logSession` usava `parseInt`: `1e3` virava 1 min,
+   `12abc` virava 12 e `99999999` era aceito (estraga barras e totais). Agora `parseMin`
+   (inteiro 1–1440); entrada inválida só devolve o foco ao campo.
+3. **Alvo de toque < 44px** — 35 controles de 34–41px no celular (botões, selects, campos, chips do
+   painel, slider do simulador). `index.html` (`@media(hover:none)`) e `app-painel.js:108`; o limite
+   de `audit-mobile.js` subiu de 32 para 44px (falhava com 35 achados, agora 0).
+
+Suposição, **não reproduzida**: teclado do celular cobrindo campo dentro de `<dialog>` (o CSS usa
+`vh` e nada lê `visualViewport`). Não há teclado virtual no Chromium headless, então não dá para
+provar; fica para teste em aparelho real. Datas/fuso: sem achado novo (a revisão de 09/10 já cobriu).
 
 ## Correções da revisão de 09/10/2026
 

@@ -157,8 +157,8 @@ function renderWeek(){
 }
 function logSession(){
   const disc=$("#logDisc").value;
-  const min=parseInt($("#logMin").value,10);
-  if(!min||min<1) return;
+  const min=parseMin($("#logMin").value);
+  if(min==null){ $("#logMin").focus(); return; }   // vazio, texto, "1e3" ou > 24h: não grava lixo nem 1 minuto em silêncio
   S.sessions.push({date:todayKey(), min, disc});
   save(); renderRevisao(); renderPainel();
 }

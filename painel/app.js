@@ -27,7 +27,7 @@ function renderProfiles(){
 function importData(){
   const inp=el("input"); inp.type="file"; inp.accept="application/json";
   inp.onchange=()=>{ const f=inp.files[0]; if(!f)return; const r=new FileReader();
-    r.onload=()=>{ try{ S=Object.assign(structuredClone(DEFAULT_STATE),JSON.parse(r.result)); save(); location.reload(); }
+    r.onload=()=>{ try{ S=normalizaEstado(JSON.parse(r.result),DEFAULT_STATE,CURSOS); save(); location.reload(); }
       catch(e){ alert("Arquivo inválido."); } }; r.readAsText(f); };
   inp.click();
 }
