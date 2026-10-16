@@ -135,10 +135,14 @@ provar; fica para teste em aparelho real. Datas/fuso: sem achado novo (a revisã
 
 1. **`min` salvo como texto** — `normalizaEstado` aceitava `min: "30"` (e `null`, que virava 0)
    sem converter; em `renderWeek` o total `totals[d] + "30"` concatenava ("003015null min",
-   "NaNhNaNmin"). Agora `minSalvo` (em `painel/estado.js`) converte texto de número decimal
-   simples para número e descarta só `null`/ausente, `""`, booleano, `"12abc"`, `"1e3"`, negativo e
-   infinito. É mais tolerante que `parseMin`: sessão antiga com 0 ou > 1440 min continua (não
-   se apaga dado já salvo). O objeto de entrada não é alterado.
+   "NaNhNaNmin"). Agora `minSalvo` (em `painel/estado.js`) devolve `+min` como número e mantém
+   **exatamente** as sessões que a regra anterior mantinha (`+min` finito ≥ 0): `null`/`""` viram 0,
+   `"30"` vira 30, `"1e3"` vira 1000. Sai só o que já saía (`"12abc"`, ausente, negativo, infinito).
+   Revisão de 16/10: a 1ª versão descartava `null`/`""`/booleano/`"1e3"` — perda de sessão que a
+   main preservava; o histórico mostra que o app sempre gravou `min` como inteiro ≥ 1
+   (`parseInt` + `if(!min||min<1) return`, depois `parseMin`), então esses casos só vêm de
+   backup editado à mão ou servidor, e mesmo assim não se apagam. É mais tolerante que `parseMin`
+   (sessão com 0 ou > 1440 min continua). O objeto de entrada não é alterado.
 2. **`Sync.pull` sem sanitização** — `applyRemote`/`mergeSecao` (`painel/sync.js`) punham o
    remoto cru em `S`: `curso` inexistente derrubava o painel (`CURSOS[S.curso].pesos`),
    `topics:"lixo"`/`questions:null` e `min` texto idem. Agora, se alguma seção mudou, o
@@ -146,7 +150,8 @@ provar; fica para teste em aparelho real. Datas/fuso: sem achado novo (a revisã
 3. `CACHE_V` `horizonte-v32` → **`horizonte-v34`** (`estado.js` e `sync.js` são servidos; `v33`
    estava reservado ao kit de fotos).
 
-Testes que falhavam antes e passam agora: `test/estado.test.js` (min texto/null; estados válidos
+Testes que falhavam antes e passam agora: `test/estado.test.js` (min texto/null; mesmas sessões
+mantidas que a regra anterior, para 30 valores de `min`; estados válidos
 de 3 perfis idempotentes; entrada não mutada) e `test/sync.test.js` (novo: carrega `estado.js` +
 `sync.js` num `vm` com `fetch` simulado — remoto ruim sanitizado, remotos válidos de 2 perfis
 intactos com `trilha`/`foco` locais preservados, união por `id` mantém locais e remotas válidas);

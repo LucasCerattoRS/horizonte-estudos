@@ -44,7 +44,7 @@ test("pull: seções remotas ruins são sanitizadas como as do localStorage", as
     topics: sec("lixo"), questions: sec(null), bancoResp: sec([1]), curso: sec("zzz"),
   });
   const S = amb.S();
-  assert.deepStrictEqual(S.sessions, [{ date: "2026-10-09", min: 30 }]);
+  assert.deepStrictEqual(S.sessions, [{ date: "2026-10-09", min: 30 }, { date: "2026-10-09", min: 0 }]);
   assert.deepStrictEqual([S.topics, S.questions, S.bancoResp, S.curso], [{}, [], {}, "geral"]);
 });
 
