@@ -50,8 +50,9 @@ test("parseMin: rejeita o que parseInt aceitava em silêncio", () => {
 });
 
 /* 16/10: min salvo como texto ("30") passava no filtro (+"30" é finito) e ficava string;
-   nos totais do Plano `totals[d] + "30"` concatenava ("030"). min null virava 0 e também ficava. */
-test("estado: min texto de número válido vira número; null/vazio/booleano/lixo saem", () => {
+   nos totais do Plano `totals[d] + "30"` concatenava ("030"). Revisão: NÃO descartar sessão que a
+   regra anterior mantinha (null/""/booleano/"1e3" ficavam) — só converter para número. */
+test("estado: min texto vira número; nenhuma sessão que a regra anterior mantinha some", () => {
   const s = normalizaEstado({ sessions: [
     { date: "2026-10-09", min: "30", disc: "mat" },
     { date: "2026-10-09", min: " 45 " },
@@ -69,10 +70,23 @@ test("estado: min texto de número válido vira número; null/vazio/booleano/lix
     { date: "2026-10-09", min: 30, disc: "mat" },
     { date: "2026-10-09", min: 45 },
     { date: "2026-10-09", min: 12.5 },
+    { date: "2026-10-09", min: 0 },
+    { date: "2026-10-09", min: 0 },
+    { date: "2026-10-09", min: 1 },
+    { date: "2026-10-09", min: 1000 },
   ]);
   s.sessions.forEach(x => assert.strictEqual(typeof x.min, "number"));
   const totals = {}; s.sessions.forEach(x => { totals[x.date] = (totals[x.date] || 0) + x.min; });
-  assert.strictEqual(totals["2026-10-09"], 87.5);
+  assert.strictEqual(totals["2026-10-09"], 1088.5);
+});
+test("estado: mantém exatamente as sessões que a regra anterior (+min finito ≥ 0) mantinha", () => {
+  const antes = x => typeof x.date === "string" && Number.isFinite(+x.min) && +x.min >= 0;
+  const mins = [0, 1, 30, 12.5, 1440, 2000, -1, NaN, Infinity, -Infinity, null, undefined, "", " ", "0", "30", " 45 ",
+    "12.5", "1e3", "12abc", "abc", "-5", "Infinity", "0x10", true, false, [], [5], [1, 2], {}];
+  const sessions = mins.map((min, i) => ({ date: "2026-10-09", min, i }));
+  const s = normalizaEstado({ sessions }, PADRAO, CURSOS);
+  assert.deepStrictEqual(s.sessions.map(x => x.i), sessions.filter(antes).map(x => x.i));
+  s.sessions.forEach(x => assert.ok(Number.isFinite(x.min) && x.min >= 0, String(x.min)));
 });
 test("estado: não altera o objeto de entrada ao converter min", () => {
   const entrada = { sessions: [{ date: "2026-10-09", min: "30" }] };

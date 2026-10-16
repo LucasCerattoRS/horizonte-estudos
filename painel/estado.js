@@ -23,8 +23,9 @@
     const s = Object.assign(structuredClone(padrao), ehObj(p) ? p : {});
     LISTAS.forEach(k => { s[k] = Array.isArray(s[k]) ? s[k].filter(ehObj) : []; });
     MAPAS.forEach(k => { if (!ehObj(s[k])) s[k] = structuredClone(padrao[k]); });
-    // min salvo como texto ("30", " 45 ", "12.5") vira número (senão `totals[d] + "30"` concatena);
-    // null, "", booleano, "12abc", "1e3", negativo e infinito saem. Número já válido fica como está.
+    // min salvo como texto ("30", " 45 ", "12.5") vira número (senão `totals[d] + "30"` concatena).
+    // Fica TODA sessão que a regra anterior (+min finito ≥ 0) já mantinha — null/"" viram 0 —, só
+    // muda o tipo; sai só o que já saía ("12abc", ausente, negativo, infinito). Número válido fica igual.
     s.sessions = s.sessions.flatMap(x => {
       if (typeof x.date !== "string") return [];
       const m = minSalvo(x.min);
@@ -34,13 +35,12 @@
     return s;
   }
 
-  /* minutos de uma sessão JÁ salva: número finito ≥ 0, ou texto de número decimal simples → número;
-     o resto → null. Mais tolerante que parseMin (aceita 0 e > MAX_MIN) para não apagar sessão antiga. */
+  /* minutos de uma sessão JÁ salva → número, ou null (sessão sai). Mesmo critério de antes
+     (+v finito ≥ 0) para não apagar sessão que já era mantida; a diferença é devolver número
+     (null e "" → 0, "30" → 30). Mais tolerante que parseMin (aceita 0 e > MAX_MIN). */
   function minSalvo(v) {
-    if (typeof v === "number") return Number.isFinite(v) && v >= 0 ? v : null;
-    if (typeof v !== "string") return null;
-    const t = v.trim();
-    return /^\d+(\.\d+)?$/.test(t) ? Number(t) : null;
+    const n = +v;
+    return Number.isFinite(n) && n >= 0 ? n : null;
   }
 
   /* minutos de uma sessão digitada: inteiro 1..1440, senão null ("1e3" e "12abc" não viram 1 e 12 em silêncio) */

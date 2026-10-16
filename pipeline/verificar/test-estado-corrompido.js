@@ -50,7 +50,7 @@ const CASOS = {
     const mins = await p.eval(`return S.sessions.map(s => s.min)`);
     const semana = await p.eval(`renderWeek(); return $("#weekTotal").textContent`);
     if (!/· 45 min$/.test(semana)) falhas.push(`total da semana com min texto: "${semana}" (esperava 45 min)`);
-    if (JSON.stringify(mins) !== "[30,15]") falhas.push(`min texto/null no localStorage: esperava [30,15], veio ${JSON.stringify(mins)}`);
+    if (JSON.stringify(mins) !== "[30,15,0]") falhas.push(`min texto/null no localStorage: esperava [30,15,0], veio ${JSON.stringify(mins)}`);
     if (p.errors.length) falhas.push(`min texto: erro de JS — ${String(p.errors[0]).split("\n")[0]}`);
 
     // 16/10: Sync.pull com estado remoto ruim passa pela mesma sanitização e a tela continua de pé
@@ -65,7 +65,7 @@ const CASOS = {
       await Sync.pull();
       for (const t of ["painel", "metricas", "analise", "revisao", "edital", "banco", "simulador"]) { try { go(t); } catch (e) { return "go(" + t + "): " + e.message; } }
       return JSON.stringify([S.sessions.map(s => s.min), typeof S.topics, Array.isArray(S.questions), S.curso]);`);
-    if (pos !== JSON.stringify([[30], "object", true, "geral"])) falhas.push(`Sync.pull com remoto ruim: ${pos}`);
+    if (pos !== JSON.stringify([[30, 0], "object", true, "geral"])) falhas.push(`Sync.pull com remoto ruim: ${pos}`);
     if (p.errors.length) falhas.push(`Sync.pull com remoto ruim: erro de JS — ${String(p.errors[0]).split("\n")[0]}`);
   } finally { p.close(); srv.close(); }
   if (falhas.length) { console.log("❌ FALHOU\n - " + falhas.join("\n - ")); process.exit(1); }
