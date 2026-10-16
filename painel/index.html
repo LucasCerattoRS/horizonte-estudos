@@ -865,6 +865,7 @@ a.rec-site .st-foco{color:var(--muted);font-size:11.5px;line-height:1.4}
 .dedic-in{position:relative;max-width:640px;margin:0 auto;padding:8vh 24px 12vh;text-align:center}
 .dedic-kicker{font-family:var(--mono);font-size:10.5px;letter-spacing:3px;text-transform:uppercase;color:var(--sunset);margin-bottom:14px}
 #dedicTitulo{font-family:var(--serif);font-size:clamp(28px,5vw,40px);font-weight:600;line-height:1.2;margin-bottom:26px}
+#dedicFotos[hidden]{display:none}  /* sem fotos (kit não importado): nenhum buraco */
 #dedicFotos{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:10px 0 34px}
 #dedicFotos img{width:150px;height:150px;object-fit:cover;border-radius:6px;transform:rotate(var(--rot,0deg));
   border:5px solid #fff;border-bottom-width:22px;box-shadow:0 8px 24px rgba(0,0,0,.45);background:#fff}
@@ -1624,6 +1625,7 @@ var _n=localStorage.getItem('painelNav');if(_n&&_n!=='lateral')document.document
 <script src="redacoes-corpus.js"></script>
 <!-- app.js foi fatiado (2026-07-16): 8 <script> globais em ORDEM (sem ES modules — file://
      bloqueia import em origem opaca). Core primeiro (define $/S), app.js por último (o boot). -->
+<script src="datas.js"></script>
 <script src="app-core.js"></script>
 <script src="app-edital.js"></script>
 <script src="app-analise.js"></script>

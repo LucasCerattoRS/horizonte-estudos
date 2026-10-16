@@ -140,8 +140,7 @@ function renderRevisao(){
 }
 function renderWeek(){
   const w=$("#weekBars"); if(!w) return; w.innerHTML="";
-  const days=[]; const now=new Date();
-  for(let i=6;i>=0;i--){ const d=new Date(now-i*DAY); days.push(d.toISOString().slice(0,10)); }
+  const days=lastDayKeys(7);
   const totals={}; S.sessions.forEach(s=>{ totals[s.date]=(totals[s.date]||0)+s.min; });
   const max=Math.max(60,...days.map(d=>totals[d]||0));
   const names=["D","S","T","Q","Q","S","S"];
@@ -241,8 +240,7 @@ function chartDisc(){
 function chartTime(){
   const svg=$("#chartTime"); svg.innerHTML="";
   const W=720,H=220,padL=34,padR=14,padT=12,padB=28;
-  const days=[]; const now=new Date();
-  for(let i=13;i>=0;i--) days.push(new Date(now-i*DAY).toISOString().slice(0,10));
+  const days=lastDayKeys(14);
   const totals={}; S.sessions.forEach(s=>totals[s.date]=(totals[s.date]||0)+s.min);
   const max=Math.max(60,...days.map(d=>totals[d]||0));
   const bw=(W-padL-padR)/days.length;
@@ -261,11 +259,6 @@ function chartTime(){
   });
 }
 function studyStreak(){
-  const set=new Set(S.sessions.map(s=>s.date));
-  let streak=0; let d=new Date();
-  // se hoje não estudou, começa de ontem (não quebra por ainda ser cedo)
-  if(!set.has(d.toISOString().slice(0,10))) d=new Date(d-DAY);
-  while(set.has(d.toISOString().slice(0,10))){ streak++; d=new Date(d-DAY); }
-  return streak;
+  return streakDe(S.sessions.map(s=>s.date));   // datas.js: hoje sem sessão ainda não quebra a sequência
 }
 

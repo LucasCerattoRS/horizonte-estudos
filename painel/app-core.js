@@ -93,7 +93,7 @@ const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const el = (t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
 const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
-const todayKey = () => new Date().toISOString().slice(0,10);
+/* todayKey/dayKey/lastDayKeys/streakDe: ver datas.js (fuso local, não UTC) */
 const daysBetween = (a,b)=>Math.round((b-a)/DAY);
 
 /* enumera todos os tópicos: {id, disc, eixo, topic} */

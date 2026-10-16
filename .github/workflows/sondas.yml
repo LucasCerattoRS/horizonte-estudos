@@ -15,6 +15,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: testes unitários (datas em fuso local)
+        run: TZ=America/Sao_Paulo node --test "test/*.test.js"
+      - name: sem as fotos (dedicatória e bilhete degradam limpo)
+        run: node pipeline/verificar/test-fotos.js
       - name: servidor local na 8899 (as sondas audit e largura esperam essa porta)
         run: |
           python3 -m http.server 8899 > /tmp/srv.log 2>&1 &

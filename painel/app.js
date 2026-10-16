@@ -45,11 +45,14 @@ function openDedicatoria(){
   });
   $("#dedicAss").textContent = d.assinatura || "";
   const fw=$("#dedicFotos"); fw.innerHTML="";
+  fw.hidden=true;                                   // só aparece se ao menos uma foto carregar
   (d.fotos||[]).forEach((src,i)=>{
-    const im=el("img"); im.src=src; im.alt="";
+    const im=el("img"); im.alt="";
     im.style.setProperty("--rot", ((i%2 ? 1 : -1)*(1.5 + (i*37)%3)) + "deg");
-    im.onerror=()=>im.remove();
+    im.onload=()=>{ fw.hidden=false; };
+    im.onerror=()=>{ im.remove(); if(!fw.children.length) fw.hidden=true; };   // foto ausente: some, sem ícone quebrado
     fw.appendChild(im);
+    im.src=src;
   });
   $("#dedic").hidden=false; document.body.style.overflow="hidden";
 }
@@ -70,8 +73,12 @@ function mostrarBilhete(pct){
   localStorage.setItem(k, todayKey());
   const img=$("#dlBilheteImg");
   const lote = m.imagens ? (pct>=70 ? m.imagens.meta : m.imagens.animo) : null;
-  if(lote && lote.length){ img.src=lote[Math.floor(Math.random()*lote.length)]; img.style.display="block"; }
-  else img.style.display="none";
+  img.style.display="none"; img.onload=null; img.onerror=null; img.removeAttribute("src");
+  if(lote && lote.length){
+    img.onload=()=>{ img.style.display="block"; };
+    img.onerror=()=>{ img.style.display="none"; img.removeAttribute("src"); };   // imagem ausente: só o texto, sem ícone quebrado
+    img.src=lote[Math.floor(Math.random()*lote.length)];
+  }
   const body=$("#dlBilheteBody"); body.innerHTML="";
   String(txt).split(/\n\s*\n/).forEach(par=>{
     const p=el("p"); p.textContent=par.trim(); if(p.textContent) body.appendChild(p);

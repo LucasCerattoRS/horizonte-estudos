@@ -19,7 +19,7 @@
    Trocar de versão: suba CACHE_V. O SW novo assume na hora (skipWaiting +
    clients.claim) e apaga os caches antigos.
    ============================================================ */
-const CACHE_V = "horizonte-v30";
+const CACHE_V = "horizonte-v31";
 
 /* Shell mínimo — o que precisa existir pro app abrir sem rede. Os arquivos de
    dados grandes NÃO entram aqui (senão a instalação baixaria 5,8 MB antes de o app
@@ -29,6 +29,7 @@ const SHELL = [
   "./index.html",
   // app.js foi fatiado (2026-07-16): os 8 são código do app e <script src> trava o
   // parser se faltar offline — todos entram na casca (não nos DADOS aquecidos depois).
+  "./datas.js",            // <script src> antes do app-core: trava o parser se faltar offline
   "./app-core.js",
   "./app-edital.js",
   "./app-analise.js",

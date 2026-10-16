@@ -59,29 +59,69 @@ Se você quer **aprender** com este projeto, comece por:
 
 ## Estado
 
-Versão pública e anonimizada de um painel que está em uso real. O código roda como está;
-o deploy é **manual** (`wrangler pages deploy`) — push neste repositório não publica nada.
+Revisão de 09/10/2026 (ambiente de nuvem, headless). O código roda como está; o deploy é
+**manual** (`wrangler pages deploy painel`) — **push ou merge neste repositório não publica nada**.
+O único workflow (`.github/workflows/sondas.yml`) só testa; não faz deploy.
 
 **Tecnologias:** HTML + CSS + JavaScript puro, Service Worker, `localStorage`, Cloudflare
 Pages Functions + D1 (SQLite) + Worker com cron para push; pipeline em Node e Python.
 
-**Como verificar:** as sondas de `pipeline/verificar/` dirigem um Chromium real por CDP
-(ver o `README.md` de lá). Exemplo, a partir da raiz:
+**Como testar** (Node ≥ 22 e um Chromium; nada para instalar):
 
 ```bash
-python -m http.server 8899 &              # as sondas esperam a porta 8899
+export CHROME=/caminho/do/chromium        # só se ele não estiver em ~/.cache/ms-playwright
+npm test                                  # unitários (datas, fuso Brasil) + "sem as fotos" no Chromium
+python3 -m http.server 8899 &             # as sondas abaixo esperam a porta 8899
 node pipeline/verificar/audit-mobile.js   # celular 390px: vazamento, alvo pequeno, campo < 16px
+node pipeline/verificar/probe-nav.js      # (e probe-offline-1visita, sweep-abas, probe-pwa…)
 ```
+
+Resultado em 09/10: `npm test` 6/6 + sem-fotos OK; as 5 sondas passam sem erro de JS.
+
+### Sem as fotos e bilhetes (estado do site no ar)
+
+As fotos da dedicatória e as imagens dos bilhetes ficaram fora do repositório (material
+privado). O painel degrada sem elas: se uma foto não carrega, ela some; se nenhuma carrega, a
+moldura inteira some (sem buraco); a imagem do bilhete idem — fica só o texto. Coberto por
+`pipeline/verificar/test-fotos.js`. Sem `perfil-seed.js` o painel abre normal, sem dedicatória.
+
+### Como importar o kit de fotos depois
+
+1. No pendrive estão o `perfil-seed.js` e a pasta de imagens. Copie para `painel/`:
+   `perfil-seed.js` e, p.ex., `painel/fotos/…` (os caminhos em `dedicatoria.fotos` e
+   `mensagens.imagens.meta|animo` do seed são relativos a `painel/`).
+2. **Suba o `CACHE_V` em `painel/sw.js`** (hoje `horizonte-v31` → `v32`). Sem isso, quem já
+   abriu o site tem o 404 do `perfil-seed.js` guardado no cache do service worker e só vê o
+   kit na 2ª recarga.
+3. Se quiser as imagens funcionando offline, acrescente-as à lista `DADOS` do `sw.js`
+   (o `perfil-seed.js` já está lá).
+4. `npm test` e depois `npx wrangler pages deploy painel` (manual). Não commite o kit se o
+   repositório for público — é pessoal.
 
 ## Pendências
 
-- O painel original tem uma versão-presente com fotos e bilhetes pessoais; esse material
-  **não** entra aqui (é privado) — no modo `--kit` as telas que dependem dele ficam vazias.
+- Importar o kit de fotos/bilhetes (acima) — depende do pendrive.
+- O PR com estas correções está em rascunho: **nada foi mesclado nem publicado**; depois do
+  merge ainda é preciso rodar o deploy manual para o site no ar receber as correções.
 - `test-qr.js` precisa de um venv com `opencv-python-headless` e assume caminho Linux (`.venv/bin/python`).
-- Revisão de 08/10/2026: campos de formulário no celular estavam com fonte 12,5–14px, o que
-  faz o iPhone dar zoom ao focar. Corrigido no `@media(hover:none)` de `painel/index.html`
-  e vigiado pelo `audit-mobile.js` (achado `campo-zoom-ios`). Removido o `test-rubricas.js`,
-  que testava a correção de redação por IA (recurso que saiu do projeto).
+- `mergeSecao` (sync) une listas por `id`: um item apagado num aparelho reaparece se o outro
+  ainda o tem. É decisão de projeto (não perder progresso), mas vale saber.
+- Sessões de estudo gravadas antes desta revisão usam data UTC; as novas usam data local.
+  Nada é reescrito; no máximo uma sessão noturna antiga aparece um dia à frente.
+
+## Correções da revisão de 09/10/2026
+
+1. **Data em UTC (`todayKey`)** — no Brasil, depois das 21h o "hoje" virava amanhã: sessão
+   de estudo, tentativa no banco e simulado gravados no dia errado, gráfico dos últimos
+   7/14 dias e sequência (🔥) quebrando à noite. Agora `painel/datas.js` usa o fuso local.
+   Testes: `test/datas.test.js` (falham com o código antigo).
+2. **Bilhete com imagem ausente** mostrava o ícone de imagem quebrada (`app.js`,
+   `mostrarBilhete`). Agora a imagem só aparece se carregar.
+3. **Dedicatória sem fotos** deixava a moldura vazia ocupando espaço (e `display:flex` anulava
+   o `hidden`). Agora a moldura só existe se alguma foto carregar.
+
+Anteriores (08/10): campos de formulário no celular a 16px (zoom do iPhone), removido o
+`test-rubricas.js` (correção de redação por IA saiu do projeto).
 
 ## Para estudar
 
