@@ -90,7 +90,9 @@ moldura inteira some (sem buraco); a imagem do bilhete idem — fica só o texto
 1. No pendrive estão o `perfil-seed.js` e a pasta de imagens. Copie para `painel/`:
    `perfil-seed.js` e, p.ex., `painel/fotos/…` (os caminhos em `dedicatoria.fotos` e
    `mensagens.imagens.meta|animo` do seed são relativos a `painel/`).
-2. **Suba o `CACHE_V` em `painel/sw.js`** (hoje `horizonte-v32` → `v33`). Sem isso, quem já
+2. **Suba o `CACHE_V` em `painel/sw.js`** para o próximo número livre (hoje `horizonte-v34` →
+   `v35`; o `v33` que este passo reservava fica sem uso — a correção de 16/10 usou o `v34` para
+   não colidir com ele). Sem isso, quem já
    abriu o site tem o 404 do `perfil-seed.js` guardado no cache do service worker e só vê o
    kit na 2ª recarga.
 3. Se quiser as imagens funcionando offline, acrescente-as à lista `DADOS` do `sw.js`
@@ -128,6 +130,30 @@ Achados reproduzidos (cada um com teste que falha no código antigo e passa agor
 Suposição, **não reproduzida**: teclado do celular cobrindo campo dentro de `<dialog>` (o CSS usa
 `vh` e nada lê `visualViewport`). Não há teclado virtual no Chromium headless, então não dá para
 provar; fica para teste em aparelho real. Datas/fuso: sem achado novo (a revisão de 09/10 já cobriu).
+
+## Estado: `min` em texto e sync sem sanitização (16/10/2026)
+
+1. **`min` salvo como texto** — `normalizaEstado` aceitava `min: "30"` (e `null`, que virava 0)
+   sem converter; em `renderWeek` o total `totals[d] + "30"` concatenava ("003015null min",
+   "NaNhNaNmin"). Agora `minSalvo` (em `painel/estado.js`) converte texto de número decimal
+   simples para número e descarta só `null`/ausente, `""`, booleano, `"12abc"`, `"1e3"`, negativo e
+   infinito. É mais tolerante que `parseMin`: sessão antiga com 0 ou > 1440 min continua (não
+   se apaga dado já salvo). O objeto de entrada não é alterado.
+2. **`Sync.pull` sem sanitização** — `applyRemote`/`mergeSecao` (`painel/sync.js`) punham o
+   remoto cru em `S`: `curso` inexistente derrubava o painel (`CURSOS[S.curso].pesos`),
+   `topics:"lixo"`/`questions:null` e `min` texto idem. Agora, se alguma seção mudou, o
+   resultado do merge passa por `normalizaEstado` (a mesma do `localStorage`) antes do `save()`.
+3. `CACHE_V` `horizonte-v32` → **`horizonte-v34`** (`estado.js` e `sync.js` são servidos; `v33`
+   estava reservado ao kit de fotos).
+
+Testes que falhavam antes e passam agora: `test/estado.test.js` (min texto/null; estados válidos
+de 3 perfis idempotentes; entrada não mutada) e `test/sync.test.js` (novo: carrega `estado.js` +
+`sync.js` num `vm` com `fetch` simulado — remoto ruim sanitizado, remotos válidos de 2 perfis
+intactos com `trilha`/`foco` locais preservados, união por `id` mantém locais e remotas válidas);
+`pipeline/verificar/test-estado-corrompido.js` ganhou "min texto no localStorage" (total da semana
+= 45 min) e "Sync.pull com remoto ruim" (7 abas abrem sem erro). Resultado: `npm test` 21/21 +
+sem-fotos + estado corrompido OK; sondas `audit-mobile`, `probe-nav`, `probe-offline-1visita` e
+`probe-pwa` sem erro de JS (cache `horizonte-v34`). Pendente: nada mesclado nem publicado.
 
 ## Correções da revisão de 09/10/2026
 

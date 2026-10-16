@@ -23,9 +23,24 @@
     const s = Object.assign(structuredClone(padrao), ehObj(p) ? p : {});
     LISTAS.forEach(k => { s[k] = Array.isArray(s[k]) ? s[k].filter(ehObj) : []; });
     MAPAS.forEach(k => { if (!ehObj(s[k])) s[k] = structuredClone(padrao[k]); });
-    s.sessions = s.sessions.filter(x => typeof x.date === "string" && Number.isFinite(+x.min) && +x.min >= 0);
+    // min salvo como texto ("30", " 45 ", "12.5") vira número (senão `totals[d] + "30"` concatena);
+    // null, "", booleano, "12abc", "1e3", negativo e infinito saem. Número já válido fica como está.
+    s.sessions = s.sessions.flatMap(x => {
+      if (typeof x.date !== "string") return [];
+      const m = minSalvo(x.min);
+      return m === null ? [] : [m === x.min ? x : { ...x, min: m }];
+    });
     if (!cursos || !cursos[s.curso]) s.curso = padrao.curso;
     return s;
+  }
+
+  /* minutos de uma sessão JÁ salva: número finito ≥ 0, ou texto de número decimal simples → número;
+     o resto → null. Mais tolerante que parseMin (aceita 0 e > MAX_MIN) para não apagar sessão antiga. */
+  function minSalvo(v) {
+    if (typeof v === "number") return Number.isFinite(v) && v >= 0 ? v : null;
+    if (typeof v !== "string") return null;
+    const t = v.trim();
+    return /^\d+(\.\d+)?$/.test(t) ? Number(t) : null;
   }
 
   /* minutos de uma sessão digitada: inteiro 1..1440, senão null ("1e3" e "12abc" não viram 1 e 12 em silêncio) */
@@ -36,7 +51,7 @@
     return n >= 1 && n <= MAX_MIN ? n : null;
   }
 
-  const api = { normalizaIndice, normalizaEstado, parseMin, MAX_MIN };
+  const api = { normalizaIndice, normalizaEstado, parseMin, minSalvo, MAX_MIN };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else Object.assign(root, api);
 })(typeof window !== "undefined" ? window : globalThis);
