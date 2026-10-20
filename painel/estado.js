@@ -31,7 +31,7 @@
       const m = minSalvo(x.min);
       return m === null ? [] : [m === x.min ? x : { ...x, min: m }];
     });
-    if (!cursos || !cursos[s.curso]) s.curso = padrao.curso;
+    if (!cursos || typeof s.curso !== "string" || !Object.hasOwn(cursos, s.curso)) s.curso = padrao.curso;
     return s;
   }
 
@@ -39,8 +39,10 @@
      (+v finito ≥ 0) para não apagar sessão que já era mantida; a diferença é devolver número
      (null e "" → 0, "30" → 30). Mais tolerante que parseMin (aceita 0 e > MAX_MIN). */
   function minSalvo(v) {
-    const n = +v;
-    return Number.isFinite(n) && n >= 0 ? n : null;
+    try {
+      const n = +v;
+      return Number.isFinite(n) && n >= 0 ? n : null;
+    } catch { return null; }
   }
 
   /* minutos de uma sessão digitada: inteiro 1..1440, senão null ("1e3" e "12abc" não viram 1 e 12 em silêncio) */

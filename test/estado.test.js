@@ -110,3 +110,17 @@ test("estado: estados válidos de vários perfis passam sem perder nada (idempot
     assert.deepStrictEqual(normalizaEstado(s, PADRAO, CURSOS), s, id + " (2ª passada)");
   }
 });
+
+test("estado: minuto com coerção inválida não descarta as sessões válidas", () => {
+  const entrada = JSON.parse('{"sessions":[{"date":"2026-10-09","min":{"valueOf":null,"toString":null}},{"date":"2026-10-09","min":30}]}');
+  const s = normalizaEstado(entrada, PADRAO, CURSOS);
+  assert.deepStrictEqual(s.sessions, [{ date: "2026-10-09", min: 30 }]);
+});
+
+test("estado: propriedades herdadas e valores não textuais não são cursos", () => {
+  for (const curso of ["constructor", "toString", "__proto__", ["cic"], { toString: null }]) {
+    const s = normalizaEstado({ curso }, PADRAO, CURSOS);
+    assert.strictEqual(s.curso, "geral");
+    assert.doesNotThrow(() => Object.keys(CURSOS[s.curso]));
+  }
+});
