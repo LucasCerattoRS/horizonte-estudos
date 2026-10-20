@@ -11,11 +11,11 @@ const PAINEL = path.join(__dirname, "..", "painel");
 const PADRAO = { version: 1, curso: "geral", topics: {}, sessions: [], questions: [], simulados: [], redacoes: [], rascunhos: {}, chat: [], bancoResp: {}, trilha: { semana: 1 } };
 
 function ambiente(estadoLocal) {
-  const ls = new Map([["painelUFRGS_token", "tok"]]);
+  const ls = new Map();
   const localStorage = { getItem: k => (ls.has(k) ? ls.get(k) : null), setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k) };
   const noop = () => {};
   const ctx = {
-    console, structuredClone, setTimeout: noop, clearTimeout: noop, JSON, Map, Object, Array, Number, String, Math, Date, Promise,
+    console, structuredClone, setTimeout: noop, clearTimeout: noop, addEventListener: noop, JSON, Map, Object, Array, Number, String, Math, Date, Promise,
     localStorage, navigator: { userAgent: "node" },
     location: { protocol: "http:", hash: "", pathname: "/", search: "", origin: "http://x" },
     history: { replaceState: noop },
@@ -30,9 +30,13 @@ function ambiente(estadoLocal) {
     let S = normalizaEstado(${JSON.stringify(estadoLocal)}, DEFAULT_STATE, CURSOS);
     let salvos = 0; function save() { salvos++; if (window.Sync && Sync.onSaved) Sync.onSaved(); }`, ctx);
   vm.runInContext(fs.readFileSync(path.join(PAINEL, "sync.js"), "utf8"), ctx);
+  localStorage.setItem("painelUFRGS_token", "tok");
   return {
     async pull(sections) { ctx.resposta = { profile: { id: "p", nome: "P" }, sections }; return vm.runInContext("Sync.pull()", ctx); },
     S: () => JSON.parse(vm.runInContext("JSON.stringify(S)", ctx)),
+    run: fonte => vm.runInContext(fonte, ctx),
+    setFetch: f => { ctx.fetch = f; },
+    storage: localStorage,
   };
 }
 const sec = (data, ts = 1e13) => ({ data, updated_at: ts });
@@ -47,6 +51,21 @@ test("pull: seções remotas ruins são sanitizadas como as do localStorage", as
   assert.deepStrictEqual(S.sessions, [{ date: "2026-10-09", min: 30 }, { date: "2026-10-09", min: 0 }]);
   assert.deepStrictEqual([S.topics, S.questions, S.bancoResp, S.curso], [{}, [], {}, "geral"]);
 });
+
+for (const operacao of ["pull", "push"]) {
+  test(`${operacao}: resposta pendente após logout não altera estado nem perfil`, async () => {
+    const amb = ambiente({ topics: { local: { status: 1 } } });
+    let responder;
+    amb.setFetch(() => new Promise(r => { responder = r; }));
+    const pendente = amb.run(`Sync.${operacao}()`);
+    amb.run("Sync.logout()");
+    responder({ ok: true, json: async () => ({ profile: { id: "antigo", nome: "Teste" }, sections: { topics: sec({ remoto: { status: 2 } }) } }) });
+    await pendente;
+    assert.deepStrictEqual(amb.S().topics, { local: { status: 1 } });
+    assert.strictEqual(amb.run("Sync.profile"), null);
+    assert.strictEqual(amb.storage.getItem("painelUFRGS_ts"), null);
+  });
+}
 
 test("pull: estados remotos válidos (vários perfis) entram intactos", async () => {
   const perfis = {

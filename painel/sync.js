@@ -28,6 +28,7 @@
   let onlineHooked = false;
   let lastTs = 0;         // relógio lógico monotônico: nenhum push repete/inverte um updated_at
   let lastMetaStr = null; // V2.1: última meta (perfil-presente) aplicada, p/ evitar re-render à toa
+  let sessao = 0;         // invalida respostas pendentes ao desconectar ou trocar login
 
   const httpBase = (location.protocol === "http:" || location.protocol === "https:") ? "/api" : null;
 
@@ -47,11 +48,14 @@
     login(t) {
       t = (t || "").trim();
       if (!t) return Promise.resolve(false);
+      sessao++;
       localStorage.setItem(TOKEN_KEY, t);
       try { localStorage.removeItem(TS_KEY); } catch (e) {}   // token novo = sincroniza tudo do zero
       return Sync.pull();
     },
     logout() {
+      sessao++;
+      clearTimeout(pushTimer);
       try { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TS_KEY); } catch (e) {}
       Sync.profile = null; render();
     },
@@ -99,19 +103,25 @@
   /* ---------- rede ---------- */
   Sync.pull = async function () {
     if (!Sync.ativo()) { render(); return false; }
+    const origem = sessao, token = Sync.token;
     status("sync");
     try {
-      const r = await fetch(apiBase() + "/state", { headers: { Authorization: "Bearer " + Sync.token } });
+      const r = await fetch(apiBase() + "/state", { headers: { Authorization: "Bearer " + token } });
+      if (origem !== sessao || token !== Sync.token) return false;
       if (!r.ok) { Sync.lastErro = r.status === 401 ? "auth" : "rede"; status(r.status === 401 ? "bad" : "off"); return false; }
       Sync.lastErro = null;
       const j = await r.json();
+      if (origem !== sessao || token !== Sync.token) return false;
       Sync.profile = j.profile || null;
       applyMeta(Sync.profile && Sync.profile.meta);  // V2.1: perfil-presente da Bia vem do D1
       applyRemote(j.sections);
       status("ok");
       Sync.push();                                   // sobe o que for local-mais-novo
       return true;
-    } catch (e) { Sync.lastErro = "rede"; status("off"); hookOnline(); return false; }
+    } catch (e) {
+      if (origem !== sessao || token !== Sync.token) return false;
+      Sync.lastErro = "rede"; status("off"); hookOnline(); return false;
+    }
   };
 
   // Aplica seções vindas do servidor (pull OU resposta do PUT). Só troca seção cujo ts remoto é maior.
@@ -138,6 +148,7 @@
 
   Sync.push = async function () {
     if (!Sync.ativo() || typeof S === "undefined") return;
+    const origem = sessao, token = Sync.token;
     const ts = tsMap(), sections = {};
     SECOES.forEach(secao => {
       if (S[secao] === undefined) return;
@@ -149,15 +160,20 @@
     try {
       const r = await fetch(apiBase() + "/state", {
         method: "PUT",
-        headers: { Authorization: "Bearer " + Sync.token, "Content-Type": "application/json" },
+        headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
         body: JSON.stringify({ sections, device: (navigator.userAgent || "").slice(0, 60) }),
       });
+      if (origem !== sessao || token !== Sync.token) return;
       if (!r.ok) { status(r.status === 401 ? "bad" : "err"); return; }
       const j = await r.json();                          // estado mesclado do servidor
+      if (origem !== sessao || token !== Sync.token) return;
       if (j && j.profile) { Sync.profile = j.profile; applyMeta(j.profile.meta); }
       applyRemote(j && j.sections);                      // converge com o que outro aparelho já subiu
       status("ok");
-    } catch (e) { status("off"); hookOnline(); }
+    } catch (e) {
+      if (origem !== sessao || token !== Sync.token) return;
+      status("off"); hookOnline();
+    }
   };
 
   // chamado por save() (app.js) em TODA mutação: diff por seção → marca as mudadas → agenda push.
