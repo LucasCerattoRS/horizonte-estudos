@@ -138,7 +138,9 @@
     try {
       for (const [secao, sv] of Object.entries(sections)) {
         if (!SECOES.includes(secao) || !sv) continue;
-        const rts = Number(sv.updated_at) || 0;
+        if (typeof sv.updated_at !== "number" && typeof sv.updated_at !== "string") continue;
+        const rts = Number(sv.updated_at);
+        if (!Number.isSafeInteger(rts) || rts <= 0) continue;
         if (rts > lastTs) lastTs = rts;               // acompanha o relógio do outro aparelho (evita clock-skew perder update)
         if (!(secao in ts) || rts > ts[secao]) { mergeSecao(secao, sv.data); ts[secao] = rts; mudou = true; }
       }
