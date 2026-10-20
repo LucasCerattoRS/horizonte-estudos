@@ -99,3 +99,28 @@ test("pull: falha ao persistir não bloqueia o envio de alterações seguintes",
   const ts = JSON.parse(amb.storage.getItem("painelUFRGS_ts"));
   assert.ok(ts.topics > 1e13, "alteração local recebe versão nova mesmo após falha de persistência");
 });
+
+for (const raw of ['"lixo"', '7', 'true', '[]', '{"topics":"inválido"}']) {
+  test(`relógio local corrompido (${raw}) não bloqueia push`, async () => {
+    const amb = ambiente({ topics: { local: { status: 2 } } });
+    amb.storage.setItem("painelUFRGS_ts", raw);
+    let enviado;
+    amb.setFetch(async (url, opcoes) => {
+      enviado = JSON.parse(opcoes.body);
+      return { ok: true, json: async () => ({ sections: {} }) };
+    });
+    await amb.run("Sync.push()");
+    assert.ok(Number.isSafeInteger(enviado.sections.topics.updated_at));
+    const salvo = JSON.parse(amb.storage.getItem("painelUFRGS_ts"));
+    assert.ok(!Array.isArray(salvo) && typeof salvo === "object");
+    assert.strictEqual(salvo.topics, enviado.sections.topics.updated_at);
+  });
+}
+
+test("relógio local persistido continua crescente após reabrir offline", () => {
+  const amb = ambiente({});
+  amb.storage.setItem("painelUFRGS_ts", '{"topics":10000000000000}');
+  amb.run("S.topics.local = { status: 2 }; Sync.onSaved()");
+  const ts = JSON.parse(amb.storage.getItem("painelUFRGS_ts"));
+  assert.ok(ts.topics > 1e13, "nova edição deve vencer a versão persistida, mesmo com relógio do aparelho atrasado");
+});
