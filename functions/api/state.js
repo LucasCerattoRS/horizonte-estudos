@@ -64,10 +64,12 @@ export async function onRequestPut(context) {
     if (!sv || typeof sv !== "object" || sv.data === undefined) continue;
     const ts = Number(sv.updated_at) || now;
     if (cur[section] !== undefined && ts <= cur[section]) continue; // a versão do banco é mais nova → mantém
-    await context.env.DB.prepare(
+    const gravacao = await context.env.DB.prepare(
       "INSERT INTO states (profile_id, section, data, updated_at) VALUES (?,?,?,?) " +
-      "ON CONFLICT(profile_id, section) DO UPDATE SET data=excluded.data, updated_at=excluded.updated_at"
+      "ON CONFLICT(profile_id, section) DO UPDATE SET data=excluded.data, updated_at=excluded.updated_at " +
+      "WHERE excluded.updated_at > states.updated_at"
     ).bind(prof.id, section, JSON.stringify(sv.data), ts).run();
+    if (!gravacao.meta.changes) continue;
     context.waitUntil(context.env.DB.prepare(
       "INSERT INTO sync_events (profile_id, section, updated_at, device, ts) VALUES (?,?,?,?,?)"
     ).bind(prof.id, section, ts, device, now).run());
