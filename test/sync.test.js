@@ -89,3 +89,13 @@ test("pull: união por id mantém sessões locais e remotas válidas", async () 
   await amb.pull({ sessions: sec([{ id: "b", date: "2026-10-02", min: "25" }, { id: "c", date: "2026-10-02", min: "abc" }]) });
   assert.deepStrictEqual(amb.S().sessions, [{ id: "a", date: "2026-10-01", min: 10 }, { id: "b", date: "2026-10-02", min: 25 }]);
 });
+
+test("pull: falha ao persistir não bloqueia o envio de alterações seguintes", async () => {
+  const amb = ambiente({});
+  amb.run('save = () => { throw new Error("quota esgotada"); }');
+  assert.strictEqual(await amb.pull({ topics: sec({ remoto: { status: 1 } }) }), false);
+  assert.strictEqual(amb.run("Sync._applying"), false);
+  amb.run("S.topics.local = { status: 2 }; Sync.onSaved()");
+  const ts = JSON.parse(amb.storage.getItem("painelUFRGS_ts"));
+  assert.ok(ts.topics > 1e13, "alteração local recebe versão nova mesmo após falha de persistência");
+});
