@@ -63,11 +63,17 @@
   window.Sync = Sync;
 
   /* ---------- helpers de estado ---------- */
-  function tsMap() { try { return JSON.parse(localStorage.getItem(TS_KEY)) || {}; } catch (e) { return {}; } }
+  function tsMap() {
+    try {
+      const m = JSON.parse(localStorage.getItem(TS_KEY));
+      if (!m || typeof m !== "object" || Array.isArray(m)) return {};
+      return Object.fromEntries(Object.entries(m).filter(([s, t]) => SECOES.includes(s) && Number.isSafeInteger(t) && t >= 0));
+    } catch (e) { return {}; }
+  }
   function setTs(m) { try { localStorage.setItem(TS_KEY, JSON.stringify(m)); } catch (e) {} }
   function snap() { if (typeof S === "undefined") return; SECOES.forEach(s => { shadow[s] = JSON.stringify(S[s]); }); }
   // updated_at estritamente crescente por aparelho: resolve empates de ms e corridas login-push↔mutação.
-  function nextTs() { lastTs = Math.max(Date.now(), lastTs + 1); return lastTs; }
+  function nextTs() { lastTs = Math.max(Date.now(), lastTs + 1, ...Object.values(tsMap()).map(t => t + 1)); return lastTs; }
 
   // Merge de uma seção remota sobre a local.
   //  - arrays cujos itens têm id → união por id (não perde progresso do outro aparelho);
