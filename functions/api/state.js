@@ -51,6 +51,15 @@ export async function onRequestPut(context) {
   const incoming = body && body.sections;
   if (!incoming || typeof incoming !== "object") return json({ error: "sections ausente" }, 400);
   const device = (body.device || "").toString().slice(0, 60);
+  const now = Date.now(), entradas = [];
+  for (const [section, sv] of Object.entries(incoming)) {
+    if (!sv || typeof sv !== "object" || sv.data === undefined) continue;
+    if (sv.updated_at !== undefined && typeof sv.updated_at !== "number" && typeof sv.updated_at !== "string")
+      return json({ error: "updated_at inválido" }, 400);
+    const ts = sv.updated_at === undefined ? now : Number(sv.updated_at);
+    if (!Number.isSafeInteger(ts) || ts <= 0) return json({ error: "updated_at inválido" }, 400);
+    entradas.push([section, sv.data, ts]);
+  }
 
   // estado atual (p/ decidir last-write-wins por seção)
   const cur = {};
@@ -59,16 +68,13 @@ export async function onRequestPut(context) {
   ).bind(prof.id).all();
   for (const r of (rows.results || [])) cur[r.section] = r.updated_at;
 
-  const now = Date.now();
-  for (const [section, sv] of Object.entries(incoming)) {
-    if (!sv || typeof sv !== "object" || sv.data === undefined) continue;
-    const ts = Number(sv.updated_at) || now;
+  for (const [section, data, ts] of entradas) {
     if (cur[section] !== undefined && ts <= cur[section]) continue; // a versão do banco é mais nova → mantém
     const gravacao = await context.env.DB.prepare(
       "INSERT INTO states (profile_id, section, data, updated_at) VALUES (?,?,?,?) " +
       "ON CONFLICT(profile_id, section) DO UPDATE SET data=excluded.data, updated_at=excluded.updated_at " +
       "WHERE excluded.updated_at > states.updated_at"
-    ).bind(prof.id, section, JSON.stringify(sv.data), ts).run();
+    ).bind(prof.id, section, JSON.stringify(data), ts).run();
     if (!gravacao.meta.changes) continue;
     context.waitUntil(context.env.DB.prepare(
       "INSERT INTO sync_events (profile_id, section, updated_at, device, ts) VALUES (?,?,?,?,?)"

@@ -124,3 +124,14 @@ test("relógio local persistido continua crescente após reabrir offline", () =>
   const ts = JSON.parse(amb.storage.getItem("painelUFRGS_ts"));
   assert.ok(ts.topics > 1e13, "nova edição deve vencer a versão persistida, mesmo com relógio do aparelho atrasado");
 });
+
+test("pull: timestamp remoto não finito não contamina o relógio nem substitui progresso", async () => {
+  for (const timestamp of ["Infinity", { valueOf: null, toString: null }]) {
+    const amb = ambiente({ topics: { local: { status: 1 } } });
+    assert.strictEqual(await amb.pull({ topics: sec({ remoto: { status: 2 } }, timestamp) }), true);
+    assert.deepStrictEqual(amb.S().topics, { local: { status: 1 } });
+    amb.run("S.topics.novo = { status: 2 }; Sync.onSaved()");
+    const ts = JSON.parse(amb.storage.getItem("painelUFRGS_ts"));
+    assert.ok(Number.isSafeInteger(ts.topics));
+  }
+});

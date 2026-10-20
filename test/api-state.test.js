@@ -54,3 +54,21 @@ test("state: gravação antiga concorrente não sobrescreve versão mais nova", 
   assert.deepEqual(JSON.parse(db.prepare("SELECT data FROM states").get().data), { status: 2 });
   assert.equal(db.prepare("SELECT count(*) AS n FROM sync_events").get().n, 1);
 });
+
+test("state: timestamps inválidos são rejeitados sem gravação parcial", async t => {
+  const { onRequestPut } = await api;
+  const db = new DatabaseSync(":memory:");
+  t.after(() => db.close());
+  db.exec(fs.readFileSync(path.join(__dirname, "../infra/schema.sql"), "utf8"));
+  db.exec("INSERT INTO profiles (id, nome, token, created) VALUES ('p', 'Teste', 'teste', 0)");
+  for (const updated_at of ["Infinity", "-Infinity", -1, "NaN", {}, null, 1.5, "1e100", { valueOf: null, toString: null }]) {
+    const ctx = contexto(db, {
+      topics: { data: { status: 1 }, updated_at: 100 },
+      sessions: { data: [], updated_at },
+    });
+    const resposta = await onRequestPut(ctx);
+    await Promise.all(ctx.pendentes);
+    assert.equal(resposta.status, 400, JSON.stringify(updated_at));
+    assert.equal(db.prepare("SELECT count(*) AS n FROM states").get().n, 0);
+  }
+});
