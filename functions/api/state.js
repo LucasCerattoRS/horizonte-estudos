@@ -57,7 +57,7 @@ export async function onRequestPut(context) {
     if (sv.updated_at !== undefined && typeof sv.updated_at !== "number" && typeof sv.updated_at !== "string")
       return json({ error: "updated_at inválido" }, 400);
     const ts = sv.updated_at === undefined ? now : Number(sv.updated_at);
-    if (!Number.isSafeInteger(ts) || ts <= 0) return json({ error: "updated_at inválido" }, 400);
+    if (!Number.isSafeInteger(ts) || ts <= 0 || ts > now + 300000) return json({ error: "updated_at inválido" }, 400);
     entradas.push([section, sv.data, ts]);
   }
 

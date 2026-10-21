@@ -63,11 +63,12 @@
   window.Sync = Sync;
 
   /* ---------- helpers de estado ---------- */
+  const maxTs = () => Date.now() + 300000; // mesma tolerância de cinco minutos da API
   function tsMap() {
     try {
       const m = JSON.parse(localStorage.getItem(TS_KEY));
       if (!m || typeof m !== "object" || Array.isArray(m)) return {};
-      return Object.fromEntries(Object.entries(m).filter(([s, t]) => SECOES.includes(s) && Number.isSafeInteger(t) && t >= 0));
+      return Object.fromEntries(Object.entries(m).filter(([s, t]) => SECOES.includes(s) && Number.isSafeInteger(t) && t > 0 && t <= maxTs()));
     } catch (e) { return {}; }
   }
   function setTs(m) { try { localStorage.setItem(TS_KEY, JSON.stringify(m)); } catch (e) {} }
@@ -140,7 +141,7 @@
         if (!SECOES.includes(secao) || !sv) continue;
         if (typeof sv.updated_at !== "number" && typeof sv.updated_at !== "string") continue;
         const rts = Number(sv.updated_at);
-        if (!Number.isSafeInteger(rts) || rts <= 0) continue;
+        if (!Number.isSafeInteger(rts) || rts <= 0 || rts > maxTs()) continue;
         if (rts > lastTs) lastTs = rts;               // acompanha o relógio do outro aparelho (evita clock-skew perder update)
         if (!(secao in ts) || rts > ts[secao]) { mergeSecao(secao, sv.data); ts[secao] = rts; mudou = true; }
       }

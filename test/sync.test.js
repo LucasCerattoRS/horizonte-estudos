@@ -39,7 +39,7 @@ function ambiente(estadoLocal) {
     storage: localStorage,
   };
 }
-const sec = (data, ts = 1e13) => ({ data, updated_at: ts });
+const sec = (data, ts = Date.now()) => ({ data, updated_at: ts });
 
 test("pull: seções remotas ruins são sanitizadas como as do localStorage", async () => {
   const amb = ambiente({ sessions: [{ date: "2026-10-01", min: 20 }] });
@@ -97,7 +97,7 @@ test("pull: falha ao persistir não bloqueia o envio de alterações seguintes",
   assert.strictEqual(amb.run("Sync._applying"), false);
   amb.run("S.topics.local = { status: 2 }; Sync.onSaved()");
   const ts = JSON.parse(amb.storage.getItem("painelUFRGS_ts"));
-  assert.ok(ts.topics > 1e13, "alteração local recebe versão nova mesmo após falha de persistência");
+  assert.ok(ts.topics >= Date.now() - 60000, "alteração local recebe versão nova mesmo após falha de persistência");
 });
 
 for (const raw of ['"lixo"', '7', 'true', '[]', '{"topics":"inválido"}']) {
@@ -119,11 +119,22 @@ for (const raw of ['"lixo"', '7', 'true', '[]', '{"topics":"inválido"}']) {
 
 test("relógio local persistido continua crescente após reabrir offline", () => {
   const amb = ambiente({});
-  amb.storage.setItem("painelUFRGS_ts", '{"topics":10000000000000}');
+  const adiantado = Date.now() + 60000; // relógio do aparelho 1 min atrasado em relação ao que ele mesmo emitiu
+  amb.storage.setItem("painelUFRGS_ts", JSON.stringify({ topics: adiantado }));
   amb.run("S.topics.local = { status: 2 }; Sync.onSaved()");
   const ts = JSON.parse(amb.storage.getItem("painelUFRGS_ts"));
-  assert.ok(ts.topics > 1e13, "nova edição deve vencer a versão persistida, mesmo com relógio do aparelho atrasado");
+  assert.ok(ts.topics > adiantado, "nova edição deve vencer a versão persistida, mesmo com relógio do aparelho atrasado");
 });
+
+for (const raw of ['{"topics":0}', '{"topics":9007199254740991}', '{"topics":1e16}']) {
+  test(`relógio persistido fora da faixa aceita pela API (${raw}) é descartado e o push usa versão válida`, () => {
+    const amb = ambiente({});
+    amb.storage.setItem("painelUFRGS_ts", raw);
+    amb.run("S.topics.local = { status: 2 }; Sync.onSaved()");
+    const ts = JSON.parse(amb.storage.getItem("painelUFRGS_ts"));
+    assert.ok(Number.isSafeInteger(ts.topics) && ts.topics > 0 && ts.topics <= Date.now() + 300000);
+  });
+}
 
 test("pull: timestamp remoto não finito não contamina o relógio nem substitui progresso", async () => {
   for (const timestamp of ["Infinity", { valueOf: null, toString: null }]) {
