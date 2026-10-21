@@ -61,7 +61,7 @@ test("state: timestamps inválidos são rejeitados sem gravação parcial", asyn
   t.after(() => db.close());
   db.exec(fs.readFileSync(path.join(__dirname, "../infra/schema.sql"), "utf8"));
   db.exec("INSERT INTO profiles (id, nome, token, created) VALUES ('p', 'Teste', 'teste', 0)");
-  for (const updated_at of ["Infinity", "-Infinity", -1, "NaN", {}, null, 1.5, "1e100", { valueOf: null, toString: null }]) {
+  for (const updated_at of [0, 9007199254740991, Date.now() + 3600000, "Infinity", "-Infinity", -1, "NaN", {}, null, 1.5, "1e100", { valueOf: null, toString: null }]) {
     const ctx = contexto(db, {
       topics: { data: { status: 1 }, updated_at: 100 },
       sessions: { data: [], updated_at },

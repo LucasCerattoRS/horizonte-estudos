@@ -58,7 +58,7 @@ const CASOS = {
     p.errors.length = 0;
     const pos = await p.eval(`
       localStorage.setItem("painelUFRGS_token", "tok-teste");
-      const sec = d => ({ data: d, updated_at: Date.now() + 1e6 });
+      const sec = d => ({ data: d, updated_at: Date.now() + 1e5 });
       window.fetch = async () => new Response(JSON.stringify({ profile: { id: "t", nome: "T" }, sections: {
         sessions: sec([{ date: todayKey(), min: "30" }, null, { date: todayKey(), min: null }]),
         topics: sec("lixo"), questions: sec(null), bancoResp: sec([1]), curso: sec("zzz") } }), { status: 200 });
