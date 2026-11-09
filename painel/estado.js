@@ -37,6 +37,7 @@
      com o mesmo histórico chegam aos mesmos ids e a união não duplica. Quem já tem id fica como está. */
   function normalizaSessoes(lista) {
     const vistas = {};
+    const usados = new Set((Array.isArray(lista) ? lista : []).filter(x => ehObj(x) && typeof x.id === "string").map(x => x.id));
     return (Array.isArray(lista) ? lista : []).flatMap(x => {
       if (!ehObj(x) || typeof x.date !== "string") return [];
       const m = minSalvo(x.min);
@@ -44,8 +45,10 @@
       let r = m === x.min ? x : { ...x, min: m };
       if (typeof r.id !== "string" || !r.id) {
         const base = [r.date, r.min, [...new Set([r.disc, ...(Array.isArray(r.discs) ? r.discs : [])].filter(d => typeof d === "string" && d))].sort().join("+")].join("|");
-        const n = vistas[base] = (vistas[base] ?? -1) + 1;
-        r = { ...r, id: `${base}|${n}` };
+        let n = vistas[base] ?? -1, id;
+        do { n++; id = `${base}|${n}`; } while (usados.has(id));   // lista mista: não repete id que já existe
+        vistas[base] = n; usados.add(id);
+        r = { ...r, id };
       }
       return [r];
     });

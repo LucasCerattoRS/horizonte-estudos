@@ -93,11 +93,14 @@
 
   // Sessões: SEMPRE união por id (nunca substitui), em qualquer ordem de timestamps e com lista remota
   // vazia ou velha. A união é idempotente e comutativa, então pull/push repetidos convergem.
-  const idsDe = l => (Array.isArray(l) ? l.map(x => x.id).sort().join("\n") : "");
+  const chaveDe = l => (Array.isArray(l) ? l.map(x => x.id + ":" + x.min).sort().join("\n") : "");   // id + minutos
   function uneSessoes(local, remoto) {
     const porId = new Map();
     normalizaSessoes(local).forEach(x => porId.set(x.id, x));
-    remoto.forEach(x => porId.set(x.id, x));        // mesmo id = mesma sessão; vence o remoto
+    remoto.forEach(x => {                            // mesmo id = mesma sessão. Sessão não é editada, então a diferença
+      const l = porId.get(x.id);                     // só pode vir de normalização; na dúvida fica a de MAIS minutos
+      porId.set(x.id, l && l.min > x.min ? l : x);   // (empate: o remoto), nunca a que apaga tempo estudado
+    });
     return [...porId.values()];
   }
 
@@ -155,14 +158,13 @@
         if (rts > lastTs) lastTs = rts;               // acompanha o relógio do outro aparelho (evita clock-skew perder update)
         if (secao === "sessions") {
           if (!Array.isArray(sv.data) || typeof normalizaSessoes !== "function") continue;   // remoto ruim nunca apaga o local
-          const remoto = normalizaSessoes(sv.data), antes = idsDe(normalizaSessoes(S.sessions));
+          const remoto = normalizaSessoes(sv.data), antes = chaveDe(normalizaSessoes(S.sessions));
           S.sessions = uneSessoes(S.sessions, remoto);
-          const depois = idsDe(S.sessions);
-          const tsAntes = ts[secao];
+          const depois = chaveDe(S.sessions), tsAntes = ts[secao];
           if (tsAntes === undefined || rts > tsAntes) ts[secao] = rts;
-          // o aparelho tem sessões que o servidor não tem: ts novo (> rts) para o push ser aceito
-          // (a API só grava timestamp maior) e reenvio garantido.
-          if (depois !== idsDe(remoto)) { ts[secao] = nextTs(); reenviar = true; }
+          // o aparelho tem sessão (ou minutos) que o servidor não tem: ts novo para o push ser aceito (a API só
+          // grava timestamp maior) e reenvio garantido. Teto = o da API (agora + 5 min): acima dele ela recusa o PUT INTEIRO.
+          if (depois !== chaveDe(remoto)) { ts[secao] = Math.min(nextTs(), maxTs()); reenviar = true; }
           if (depois !== antes || tsAntes === undefined || rts > tsAntes) mudou = true;
           continue;
         }

@@ -144,3 +144,8 @@ test("id legado: ordem e repetição de discs não mudam o id (a mesma sessão n
   assert.strictEqual(id({ ...base, disc: "fil", discs: ["fil", "soc"] }), id({ ...base, disc: "soc", discs: ["soc", "fil"] }));
   assert.notStrictEqual(id({ ...base, disc: "fil" }), id({ ...base, disc: "soc" }));
 });
+
+test("lista mista (com e sem id): ids derivados não repetem um id que já existe", () => {
+  const s = normalizaEstado({ sessions: [{ date: "2026-11-09", min: 30, disc: "mat", id: "2026-11-09|30|mat|0" }, { date: "2026-11-09", min: 30, disc: "mat" }] }, PADRAO, CURSOS);
+  assert.strictEqual(new Set(s.sessions.map(x => x.id)).size, 2);
+});

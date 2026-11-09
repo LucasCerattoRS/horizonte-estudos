@@ -163,7 +163,7 @@ function novoIdSessao(){
       : "s"+Date.now().toString(36)+Math.random().toString(36).slice(2,10);
     if(!usados.has(id)) return id;
   }
-  return "s"+Date.now().toString(36)+usados.size;
+  let n=usados.size, id; do { id="s"+Date.now().toString(36)+"-"+(n++); } while(usados.has(id)); return id;
 }
 function logSession(){
   const disc=$("#logDisc").value;

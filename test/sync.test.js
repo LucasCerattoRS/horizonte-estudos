@@ -216,3 +216,16 @@ test("pull: sessões remotas inválidas (null/texto) nunca apagam as locais", as
   await A.pull({ sessions: sec(null) }); await A.pull({ sessions: sec("lixo") });
   assert.strictEqual(min(A), 30);
 });
+
+test("pull: mesmo id com minutos diferentes mantém o maior (nunca apaga tempo estudado)", async () => {
+  const A = ambiente({ sessions: [{ id: "x", date: "2026-11-09", min: 45 }] });
+  await A.pull({ sessions: sec([{ id: "x", date: "2026-11-09", min: 20 }]) });
+  assert.strictEqual(min(A), 45);
+});
+
+test("pull: ts da seção nunca passa do teto da API (senão ela recusa o PUT inteiro)", async () => {
+  const A = ambiente({ sessions: [{ id: "a1", date: "2026-11-09", min: 30 }] });
+  const perto = Date.now() + 299000;                       // remoto quase no limite de +5 min
+  await A.pull({ sessions: sec([], perto) });
+  assert.ok(A.run("JSON.parse(localStorage.getItem('painelUFRGS_ts')).sessions") <= Date.now() + 300000);
+});
