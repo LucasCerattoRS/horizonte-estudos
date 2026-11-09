@@ -3,6 +3,7 @@ const test = require("node:test");
 const assert = require("node:assert");
 const { normalizaIndice, normalizaEstado, parseMin } = require("../painel/estado.js");
 
+const semId = l => l.map(({ id, ...r }) => r);   // ids determinísticos têm teste próprio abaixo
 const PADRAO = { version: 1, curso: "geral", topics: {}, sessions: [], questions: [], simulados: [], redacoes: [], rascunhos: {}, chat: [], bancoResp: {}, trilha: { semana: 1 } };
 const CURSOS = { geral: {}, cic: {} };
 const IDX0 = { active: "alex", profiles: [{ id: "alex", nome: "Alex", emoji: "🌅" }] };
@@ -31,7 +32,7 @@ test("estado: curso removido/inválido volta ao padrão (antes: CURSOS[S.curso].
 test("estado: sessões lixo (null, min texto, min negativo, sem data) saem; as boas ficam", () => {
   const boa = { date: "2026-10-09", min: 30, disc: "mat" };
   const s = normalizaEstado({ sessions: [null, { min: "abc", date: "2026-10-09" }, { date: 5, min: 3 }, { date: "2026-10-09", min: -3 }, boa] }, PADRAO, CURSOS);
-  assert.deepStrictEqual(s.sessions, [boa]);
+  assert.deepStrictEqual(semId(s.sessions), [boa]);
 });
 test("estado: JSON que não é objeto (null, array) rende o padrão", () => {
   assert.deepStrictEqual(normalizaEstado(null, PADRAO, CURSOS), PADRAO);
@@ -66,7 +67,7 @@ test("estado: min texto vira número; nenhuma sessão que a regra anterior manti
     { date: "2026-10-09", min: "-5" },
     { date: "2026-10-09", min: Infinity },
   ] }, PADRAO, CURSOS);
-  assert.deepStrictEqual(s.sessions, [
+  assert.deepStrictEqual(semId(s.sessions), [
     { date: "2026-10-09", min: 30, disc: "mat" },
     { date: "2026-10-09", min: 45 },
     { date: "2026-10-09", min: 12.5 },
@@ -106,7 +107,10 @@ const VALIDOS = {
 test("estado: estados válidos de vários perfis passam sem perder nada (idempotente)", () => {
   for (const [id, st] of Object.entries(VALIDOS)) {
     const s = normalizaEstado(structuredClone(st), PADRAO, CURSOS);
-    assert.deepStrictEqual(s, Object.assign(structuredClone(PADRAO), st), id);
+    const esperado = Object.assign(structuredClone(PADRAO), st);
+    assert.deepStrictEqual({ ...s, sessions: semId(s.sessions) }, { ...esperado, sessions: semId(esperado.sessions) }, id);
+    assert.ok(s.sessions.every(x => typeof x.id === "string" && x.id), id + " (toda sessão ganha id)");
+    assert.strictEqual(s.sessions.find(x => x.id === "s1")?.date ?? "2026-10-03", "2026-10-03", id + " (id existente fica)");
     assert.deepStrictEqual(normalizaEstado(s, PADRAO, CURSOS), s, id + " (2ª passada)");
   }
 });
@@ -114,7 +118,7 @@ test("estado: estados válidos de vários perfis passam sem perder nada (idempot
 test("estado: minuto com coerção inválida não descarta as sessões válidas", () => {
   const entrada = JSON.parse('{"sessions":[{"date":"2026-10-09","min":{"valueOf":null,"toString":null}},{"date":"2026-10-09","min":30}]}');
   const s = normalizaEstado(entrada, PADRAO, CURSOS);
-  assert.deepStrictEqual(s.sessions, [{ date: "2026-10-09", min: 30 }]);
+  assert.deepStrictEqual(semId(s.sessions), [{ date: "2026-10-09", min: 30 }]);
 });
 
 test("estado: propriedades herdadas e valores não textuais não são cursos", () => {
@@ -123,4 +127,13 @@ test("estado: propriedades herdadas e valores não textuais não são cursos", (
     assert.strictEqual(s.curso, "geral");
     assert.doesNotThrow(() => Object.keys(CURSOS[s.curso]));
   }
+});
+
+test("sessões antigas ganham id determinístico: mesmo histórico → mesmos ids; iguais não colidem", () => {
+  const hist = [{ date: "2026-10-01", min: 30, disc: "mat" }, { date: "2026-10-01", min: 30, disc: "mat" }, { date: "2026-10-02", min: 20 }];
+  const a = normalizaEstado({ sessions: structuredClone(hist) }, PADRAO, CURSOS).sessions;
+  const b = normalizaEstado({ sessions: structuredClone(hist) }, PADRAO, CURSOS).sessions;
+  assert.deepStrictEqual(a.map(x => x.id), b.map(x => x.id));
+  assert.strictEqual(new Set(a.map(x => x.id)).size, 3);
+  assert.deepStrictEqual(normalizaEstado({ sessions: a }, PADRAO, CURSOS).sessions, a);   // idempotente
 });

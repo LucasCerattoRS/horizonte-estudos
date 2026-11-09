@@ -159,7 +159,7 @@ function logSession(){
   const disc=$("#logDisc").value;
   const min=parseMin($("#logMin").value);
   if(min==null){ $("#logMin").focus(); return; }   // vazio, texto, "1e3" ou > 24h: não grava lixo nem 1 minuto em silêncio
-  S.sessions.push({date:todayKey(), min, disc});
+  S.sessions.push({id:"s"+Date.now().toString(36)+Math.random().toString(36).slice(2,6), date:todayKey(), min, disc});
   save(); renderRevisao(); renderPainel();
 }
 

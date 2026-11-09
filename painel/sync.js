@@ -81,6 +81,12 @@
   //  - o resto (topics/bancoResp/rascunhos map, curso string) → substitui (last-write-wins por seção).
   function mergeSecao(secao, remoto) {
     if (typeof S === "undefined" || remoto === undefined) return;
+    // sessões antigas não têm id: dá id (mesmo critério do estado.js) dos dois lados antes de unir,
+    // senão cairia no "substitui tudo" e apagaria minutos registrados no outro aparelho.
+    if (secao === "sessions" && Array.isArray(remoto) && typeof normalizaSessoes === "function") {
+      remoto = normalizaSessoes(remoto);
+      if (Array.isArray(S.sessions)) S.sessions = normalizaSessoes(S.sessions);
+    }
     const local = S[secao];
     if (Array.isArray(remoto) && Array.isArray(local) && remoto.length && remoto.every(x => x && x.id)) {
       const byId = new Map(local.filter(x => x && x.id).map(x => [x.id, x]));

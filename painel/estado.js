@@ -26,13 +26,29 @@
     // min salvo como texto ("30", " 45 ", "12.5") vira número (senão `totals[d] + "30"` concatena).
     // Fica TODA sessão que a regra anterior (+min finito ≥ 0) já mantinha — null/"" viram 0 —, só
     // muda o tipo; sai só o que já saía ("12abc", ausente, negativo, infinito). Número válido fica igual.
-    s.sessions = s.sessions.flatMap(x => {
-      if (typeof x.date !== "string") return [];
-      const m = minSalvo(x.min);
-      return m === null ? [] : [m === x.min ? x : { ...x, min: m }];
-    });
+    s.sessions = normalizaSessoes(s.sessions);
     if (!cursos || typeof s.curso !== "string" || !Object.hasOwn(cursos, s.curso)) s.curso = padrao.curso;
     return s;
+  }
+
+  /* Lista de sessões → sessões válidas, todas com `id`. Sem id o sync entre aparelhos substitui a
+     lista inteira (sync.js: mergeSecao só une por id) e a sessão do outro aparelho some.
+     Sessão antiga recebe id DETERMINÍSTICO (data|min|disciplinas|n-ésima igual), então dois aparelhos
+     com o mesmo histórico chegam aos mesmos ids e a união não duplica. Quem já tem id fica como está. */
+  function normalizaSessoes(lista) {
+    const vistas = {};
+    return (Array.isArray(lista) ? lista : []).flatMap(x => {
+      if (!ehObj(x) || typeof x.date !== "string") return [];
+      const m = minSalvo(x.min);
+      if (m === null) return [];
+      let r = m === x.min ? x : { ...x, min: m };
+      if (typeof r.id !== "string" || !r.id) {
+        const base = [r.date, r.min, [r.disc, ...(Array.isArray(r.discs) ? r.discs : [])].filter(Boolean).join("+")].join("|");
+        const n = vistas[base] = (vistas[base] ?? -1) + 1;
+        r = { ...r, id: `${base}|${n}` };
+      }
+      return [r];
+    });
   }
 
   /* minutos de uma sessão JÁ salva → número, ou null (sessão sai). Mesmo critério de antes
@@ -53,7 +69,7 @@
     return n >= 1 && n <= MAX_MIN ? n : null;
   }
 
-  const api = { normalizaIndice, normalizaEstado, parseMin, minSalvo, MAX_MIN };
+  const api = { normalizaIndice, normalizaEstado, parseMin, minSalvo, normalizaSessoes, MAX_MIN };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else Object.assign(root, api);
 })(typeof window !== "undefined" ? window : globalThis);

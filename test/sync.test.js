@@ -48,7 +48,8 @@ test("pull: seções remotas ruins são sanitizadas como as do localStorage", as
     topics: sec("lixo"), questions: sec(null), bancoResp: sec([1]), curso: sec("zzz"),
   });
   const S = amb.S();
-  assert.deepStrictEqual(S.sessions, [{ date: "2026-10-09", min: 30 }, { date: "2026-10-09", min: 0 }]);
+  // a sessão local (20 min) agora SOBREVIVE: antes a lista remota a substituía inteira
+  assert.deepStrictEqual(S.sessions.map(({ id, ...r }) => r), [{ date: "2026-10-01", min: 20 }, { date: "2026-10-09", min: 30 }, { date: "2026-10-09", min: 0 }]);
   assert.deepStrictEqual([S.topics, S.questions, S.bancoResp, S.curso], [{}, [], {}, "geral"]);
 });
 
@@ -79,7 +80,9 @@ test("pull: estados remotos válidos (vários perfis) entram intactos", async ()
     const sections = {}; for (const [k, v] of Object.entries(remoto)) sections[k] = sec(v);
     await amb.pull(sections);
     const S = amb.S();
-    for (const [k, v] of Object.entries(remoto)) assert.deepStrictEqual(S[k], v, `${id}.${k}`);
+    // sessão remota sem id ganha id ao entrar (é isso que permite a união); o resto entra intacto
+    const comoRemoto = k => (k === "sessions" ? S[k].map(x => (remoto[k].some(r => r.id) ? x : (({ id, ...r }) => r)(x))) : S[k]);
+    for (const [k, v] of Object.entries(remoto)) assert.deepStrictEqual(comoRemoto(k), v, `${id}.${k}`);
     assert.deepStrictEqual([S.trilha, S.foco], [{ semana: 4 }, "fisica"], id + ": campos locais fora do sync preservados");
   }
 });
@@ -145,4 +148,14 @@ test("pull: timestamp remoto não finito não contamina o relógio nem substitui
     const ts = JSON.parse(amb.storage.getItem("painelUFRGS_ts"));
     assert.ok(Number.isSafeInteger(ts.topics));
   }
+});
+
+test("pull: sessões antigas sem id dos dois aparelhos se UNEM em vez de a remota apagar a local", async () => {
+  const comum = { date: "2026-10-01", min: 30, disc: "mat" };
+  const amb = ambiente({ sessions: [comum, { date: "2026-10-05", min: 45, disc: "bio" }] });   // 45 min só neste aparelho
+  await amb.pull({ sessions: sec([comum, { date: "2026-10-06", min: 20, disc: "fis" }]) });   // 20 min só no outro
+  const S = amb.S();
+  const total = S.sessions.reduce((a, x) => a + x.min, 0);
+  assert.strictEqual(total, 30 + 45 + 20);
+  assert.strictEqual(S.sessions.length, 3);                                                     // a comum não duplica
 });
