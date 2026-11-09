@@ -50,7 +50,7 @@ Muitas questões de CN se resolvem lendo bem o texto, e Linguagens foi o seu pon
 
 As questões estão no **banco do painel**: aba *Banco*, com os filtros **ENEM**, ano e disciplina **MT** ou **CN**. Procure pelo número, ou use a busca com uma palavra do assunto. O número é o do **caderno azul** oficial. Em 2016, CN fazia parte do 1º dia (questões 46–90).
 
-> ⚠️ **Limite do banco:** o campo de contexto do painel é um **resumo** do texto-base, não o texto da prova. A figura aparece só descrita. Nas questões marcadas com "Figura: sim", e sempre que o resumo não bastar, abra o caderno azul oficial do ano no site do Inep: *gov.br/inep → Enem → Provas e gabaritos*. Matemática e CN de 2017 em diante estão no **2º dia**. Ver `relatorio-fidelidade-provas` / issue de fidelidade.
+> ⚠️ **Limite do banco:** o campo de contexto do painel é um **resumo** do texto-base, não o texto da prova. A figura aparece só descrita. Nas questões marcadas com "Figura: sim", e sempre que o resumo não bastar, abra o caderno azul oficial do ano no site do Inep: *gov.br/inep → Enem → Provas e gabaritos*. Matemática e CN de 2017 em diante estão no **2º dia**. O plano para trocar os resumos pelas imagens originais está na [issue #8](https://github.com/LucasCerattoRS/horizonte-estudos/issues/8).
 
 ★ = essencial · sem estrela = extra
 
