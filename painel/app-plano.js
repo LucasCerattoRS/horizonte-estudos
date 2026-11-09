@@ -156,10 +156,15 @@ function renderWeek(){
   $("#weekTotal").textContent=`${Math.floor(weekTotal/60)}h${weekTotal%60}min nos últimos 7 dias · ${weekTotal} min`;
 }
 function logSession(){
-  const disc=$("#logDisc").value;
+  const discs=[...document.querySelectorAll("#logDisc input:checked")].map(c=>c.value);
   const min=parseMin($("#logMin").value);
   if(min==null){ $("#logMin").focus(); return; }   // vazio, texto, "1e3" ou > 24h: não grava lixo nem 1 minuto em silêncio
-  S.sessions.push({date:todayKey(), min, disc});
+  if(!discs.length){ const b=$("#logDisc"); b.classList.add("vazio"); setTimeout(()=>b.classList.remove("vazio"),1200); return; }
+  // `min` = total da sessão (totais, sequência e semana não mudam); `disc` = a primeira (compatível com
+  // o que já existe e com o sync); `discs` só quando há mais de uma — o tempo é dividido igual (minPorDisc).
+  const sessao={date:todayKey(), min, disc:discs[0]};
+  if(discs.length>1) sessao.discs=discs;
+  S.sessions.push(sessao);
   save(); renderRevisao(); renderPainel();
 }
 

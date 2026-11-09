@@ -53,7 +53,23 @@
     return n >= 1 && n <= MAX_MIN ? n : null;
   }
 
-  const api = { normalizaIndice, normalizaEstado, parseMin, minSalvo, MAX_MIN };
+  /* disciplinas de uma sessão: `discs` (lista, sessões com mais de uma) ou só `disc` (sessões antigas) */
+  function discsDaSessao(s) {
+    const lista = s && Array.isArray(s.discs) ? s.discs.filter(d => typeof d === "string" && d) : [];
+    if (lista.length) return [...new Set(lista)];
+    return s && typeof s.disc === "string" && s.disc ? [s.disc] : [];
+  }
+
+  /* minutos por disciplina: `min` é o total da sessão e nunca muda; com mais de uma disciplina
+     o tempo é dividido igual (2 disciplinas, 60 min → 30 + 30), então a soma volta ao total. */
+  function minPorDisc(s) {
+    const ds = discsDaSessao(s), m = +(s && s.min) || 0;
+    const r = {};
+    ds.forEach(d => { r[d] = m / ds.length; });
+    return r;
+  }
+
+  const api = { normalizaIndice, normalizaEstado, parseMin, minSalvo, discsDaSessao, minPorDisc, MAX_MIN };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else Object.assign(root, api);
 })(typeof window !== "undefined" ? window : globalThis);

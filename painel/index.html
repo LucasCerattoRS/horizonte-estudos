@@ -376,6 +376,11 @@ h2.section{font-family:var(--font-title);font-size:var(--text-2xl);font-weight:v
 .log-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 .log-form select,.log-form input{background:var(--raised);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px}
 .log-form input[type=number]{width:78px}
+.dchips{display:flex;flex-wrap:wrap;gap:6px;flex-basis:100%}
+.dchips.vazio{outline:2px solid var(--sunset,#e5484d);outline-offset:3px;border-radius:8px}
+.dchip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:1px solid var(--border);border-radius:99px;background:var(--raised);font-size:13px;cursor:pointer}
+.dchip:has(input:checked){border-color:var(--azul,#4c8dff);background:color-mix(in srgb,var(--azul,#4c8dff) 16%,var(--raised))}
+.dchip input{accent-color:var(--azul,#4c8dff);width:16px;height:16px}
 .week{display:flex;gap:5px;margin-top:12px}
 .week .d{flex:1;text-align:center}
 .week .bar{height:60px;background:var(--raised);border-radius:6px;position:relative;overflow:hidden;display:flex;align-items:flex-end}
@@ -1190,7 +1195,7 @@ var _n=localStorage.getItem('painelNav');if(_n&&_n!=='lateral')document.document
         <div class="card" style="margin-bottom:16px">
           <div class="eyebrow">Registrar sessão de estudo</div>
           <div class="log-form">
-            <select id="logDisc"></select>
+            <div id="logDisc" class="dchips" role="group" aria-label="Disciplinas da sessão"></div>
             <input type="number" id="logMin" placeholder="min" min="1" max="1440" inputmode="numeric" value="30">
             <button class="btn primary" onclick="logSession()">Registrar</button>
           </div>

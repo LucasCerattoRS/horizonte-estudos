@@ -1,7 +1,7 @@
 // Roda com: TZ=America/Sao_Paulo node --test test/   (ou: npm test)
 const test = require("node:test");
 const assert = require("node:assert");
-const { normalizaIndice, normalizaEstado, parseMin } = require("../painel/estado.js");
+const { normalizaIndice, normalizaEstado, parseMin, minPorDisc, discsDaSessao } = require("../painel/estado.js");
 
 const PADRAO = { version: 1, curso: "geral", topics: {}, sessions: [], questions: [], simulados: [], redacoes: [], rascunhos: {}, chat: [], bancoResp: {}, trilha: { semana: 1 } };
 const CURSOS = { geral: {}, cic: {} };
@@ -123,4 +123,19 @@ test("estado: propriedades herdadas e valores não textuais não são cursos", (
     assert.strictEqual(s.curso, "geral");
     assert.doesNotThrow(() => Object.keys(CURSOS[s.curso]));
   }
+});
+
+test("sessão com mais de uma disciplina: discs sobrevive, min total fica e o tempo divide igual", () => {
+  const multi = { date: "2026-11-09", min: 60, disc: "fil", discs: ["fil", "soc"] };
+  const s = normalizaEstado({ sessions: [multi] }, PADRAO, CURSOS);
+  assert.deepStrictEqual(s.sessions, [multi]);
+  assert.deepStrictEqual(minPorDisc(multi), { fil: 30, soc: 30 });
+  assert.deepStrictEqual(Object.values(minPorDisc(multi)).reduce((a, b) => a + b, 0), multi.min);
+});
+
+test("sessão antiga (só disc) e sessão sem disciplina continuam válidas", () => {
+  assert.deepStrictEqual(discsDaSessao({ min: 30, disc: "mat" }), ["mat"]);
+  assert.deepStrictEqual(minPorDisc({ min: 30, disc: "mat" }), { mat: 30 });
+  assert.deepStrictEqual(discsDaSessao({ min: 30 }), []);
+  assert.deepStrictEqual(discsDaSessao({ min: 30, disc: "mat", discs: ["x", "x", 5, ""] }), ["x"]);
 });

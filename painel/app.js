@@ -6,6 +6,17 @@ function fillDiscSelect(sel){
   sel.innerHTML="";
   DISCIPLINAS.forEach(d=>{ const o=el("option"); o.value=d.id; o.textContent=`${d.icon} ${d.nome}`; sel.appendChild(o); });
 }
+/* Registro de sessão: disciplinas do edital + Filosofia e Sociologia (só ENEM, fora de DISCIPLINAS
+   de propósito: entrar lá mexeria no Mapa do Edital, nas métricas e no plano). Escolha múltipla. */
+const DISC_EXTRAS_REGISTRO = [ { id:"fil", nome:"Filosofia", icon:"🏛️" }, { id:"soc", nome:"Sociologia", icon:"🧑‍🤝‍🧑" } ];
+function fillDiscChips(box){
+  box.innerHTML="";
+  [...DISCIPLINAS, ...DISC_EXTRAS_REGISTRO].forEach((d,i)=>{
+    const l=el("label","dchip"); const c=el("input"); c.type="checkbox"; c.value=d.id; c.checked = i===0;
+    const t=el("span"); t.textContent=`${d.icon} ${d.nome}`;
+    l.appendChild(c); l.appendChild(t); box.appendChild(l);
+  });
+}
 function exportData(){
   const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
   const a=el("a"); a.href=URL.createObjectURL(blob);
@@ -91,7 +102,7 @@ function mostrarBilhete(pct){
    ============================================================ */
 function init(){
   fillCursoSelect();
-  fillDiscSelect($("#logDisc"));
+  fillDiscChips($("#logDisc"));
   // filtros do banco
   const qf=$("#qFilter"); DISCIPLINAS.forEach(d=>{ const o=el("option"); o.value=d.id; o.textContent=`${d.icon} ${d.nome}`; qf.appendChild(o); });
   fillProvaSelects(); renderProva();
