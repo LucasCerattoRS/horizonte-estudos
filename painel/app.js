@@ -11,8 +11,8 @@ function fillDiscSelect(sel){
 const DISC_EXTRAS_REGISTRO = [ { id:"fil", nome:"Filosofia", icon:"🏛️" }, { id:"soc", nome:"Sociologia", icon:"🧑‍🤝‍🧑" } ];
 function fillDiscChips(box){
   box.innerHTML="";
-  [...DISCIPLINAS, ...DISC_EXTRAS_REGISTRO].forEach((d,i)=>{
-    const l=el("label","dchip"); const c=el("input"); c.type="checkbox"; c.value=d.id; c.checked = i===0;
+  [...DISCIPLINAS, ...DISC_EXTRAS_REGISTRO].forEach(d=>{
+    const l=el("label","dchip"); const c=el("input"); c.type="checkbox"; c.value=d.id; c.checked = false;
     const t=el("span"); t.textContent=`${d.icon} ${d.nome}`;
     l.appendChild(c); l.appendChild(t); box.appendChild(l);
   });

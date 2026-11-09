@@ -1195,7 +1195,8 @@ var _n=localStorage.getItem('painelNav');if(_n&&_n!=='lateral')document.document
         <div class="card" style="margin-bottom:16px">
           <div class="eyebrow">Registrar sessão de estudo</div>
           <div class="log-form">
-            <div id="logDisc" class="dchips" role="group" aria-label="Disciplinas da sessão"></div>
+            <div id="logDisc" class="dchips" role="group" aria-label="Disciplinas da sessão" tabindex="-1"></div>
+            <div id="logDiscErro" role="alert" style="flex-basis:100%;font-size:12.5px;color:var(--sunset,#e5484d)"></div>
             <input type="number" id="logMin" placeholder="min" min="1" max="1440" inputmode="numeric" value="30">
             <button class="btn primary" onclick="logSession()">Registrar</button>
           </div>

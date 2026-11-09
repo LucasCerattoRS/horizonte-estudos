@@ -159,7 +159,11 @@ function logSession(){
   const discs=[...document.querySelectorAll("#logDisc input:checked")].map(c=>c.value);
   const min=parseMin($("#logMin").value);
   if(min==null){ $("#logMin").focus(); return; }   // vazio, texto, "1e3" ou > 24h: não grava lixo nem 1 minuto em silêncio
-  if(!discs.length){ const b=$("#logDisc"); b.classList.add("vazio"); setTimeout(()=>b.classList.remove("vazio"),1200); return; }
+  if(!discs.length){   // erro visível e anunciado: foco no grupo + texto em role=alert
+    const b=$("#logDisc"), a=$("#logDiscErro");
+    b.classList.add("vazio"); if(a) a.textContent="Marque ao menos uma disciplina.";
+    b.focus(); setTimeout(()=>{ b.classList.remove("vazio"); if(a) a.textContent=""; },3000); return;
+  }
   // `min` = total da sessão (totais, sequência e semana não mudam); `disc` = a primeira (compatível com
   // o que já existe e com o sync); `discs` só quando há mais de uma — o tempo é dividido igual (minPorDisc).
   const sessao={date:todayKey(), min, disc:discs[0]};
