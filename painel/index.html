@@ -447,6 +447,10 @@ h2.section{font-family:var(--font-title);font-size:var(--text-2xl);font-weight:v
 .bq .ctx{font-size:12.5px;color:var(--faint);font-style:italic;line-height:1.5;margin-bottom:8px;padding-left:10px;border-left:2px solid var(--border)}
 /* Figura descrita: a imagem original vive no PDF; o extrator capturou os DADOS dela
    (valores de gráfico/tabela, cena da foto). Moldura tracejada = convenção de placeholder. */
+.bq .ctx-rot{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.4px;text-transform:uppercase;font-style:normal;color:var(--faint);margin-bottom:3px}
+.bq .bq-prova{margin:0 0 11px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;overflow:hidden}
+.bq .bq-prova img{display:block;width:100%;max-width:640px;height:auto;margin:0 auto}
+.bq .bq-prova figcaption{font-family:var(--mono);font-size:9.5px;letter-spacing:.3px;color:#666;margin-top:6px;text-align:center}
 .bq .bq-fig{margin-bottom:11px;padding:11px 13px;background:var(--raised);border:1px dashed var(--azul-deep);border-left-width:3px;border-radius:var(--radius-sm)}
 .bq .bq-fig figcaption{font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--azul);margin-bottom:5px;display:flex;flex-wrap:wrap;gap:4px;align-items:baseline}
 .bq .bq-fig figcaption span{color:var(--faint);text-transform:none;letter-spacing:.2px;font-size:9.5px}
@@ -1624,6 +1628,7 @@ var _n=localStorage.getItem('painelNav');if(_n&&_n!=='lateral')document.document
 <script src="recursos-data.js"></script>
 <script src="leituras-data.js"></script>
 <script src="banco-questoes-data.js"></script>
+<script src="provas-img-data.js"></script>
 <script src="perfil-seed.js"></script>
 <script src="redacoes-corpus.js"></script>
 <!-- app.js foi fatiado (2026-07-16): 8 <script> globais em ORDEM (sem ES modules — file://

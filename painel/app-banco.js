@@ -260,9 +260,7 @@ function bqCard(q){
       ${tinfo?`<button class="tag tlink" onclick="irAoEdital('${q.id_topico}')" title="ver este tópico no Mapa do Edital · ${esc(tinfo.disc)}">📍 ${esc(tinfo.tp)}</button>`:""}
       ${q.tem_figura?`<span class="tag fig">🖼 figura</span>`:""}
     </div>
-    ${q.contexto?`<div class="ctx">${esc(q.contexto)}</div>`:""}
-    ${q.descricao_figura?`<figure class="bq-fig"><figcaption>🖼 Figura da questão <span>· descrição extraída do enunciado (a imagem original está na prova)</span></figcaption><div class="bq-fig-tx">${esc(q.descricao_figura)}</div></figure>`:""}
-    <div class="en">${esc(q.enunciado||"")}</div>
+    ${bqProva(q)}
     <div class="alts">${alts}</div>
     ${veredito}
     <div class="bq-links">
@@ -272,6 +270,19 @@ function bqCard(q){
       <button onclick='bqEstudar(${JSON.stringify(q.id)})'>📚 ${tinfo?"Estudar este tópico":"Estudar a matéria"}</button>
     </div>
   </div>`;
+}
+/* A questão como foi impressa. Com recorte do caderno oficial (provas-img-data.js), a
+   imagem SUBSTITUI o resumo e a descrição da figura — ela já traz texto-base, figura,
+   enunciado e alternativas; os botões abaixo servem só para marcar a resposta.
+   Sem recorte, o resumo continua, mas rotulado: não é o texto da prova. */
+function bqProva(q){
+  const img = (typeof PROVAS_IMG!=="undefined") && PROVAS_IMG[q.id];
+  if(img) return `<figure class="bq-prova"><img src="${esc(img)}" loading="lazy" decoding="async"
+      alt="Questão ${q.numero}, ${esc(q.exame)} ${esc(q.ano)} (imagem do caderno oficial)">
+    <figcaption>Imagem do caderno oficial${q.exame==="ENEM"?" · INEP, caderno azul":""}</figcaption></figure>`;
+  return (q.contexto?`<div class="ctx"><span class="ctx-rot">Resumo do assunto · não é o texto da prova</span>${esc(q.contexto)}</div>`:"")
+    + (q.descricao_figura?`<figure class="bq-fig"><figcaption>🖼 Figura da questão <span>· descrição extraída do enunciado (a imagem original está na prova)</span></figcaption><div class="bq-fig-tx">${esc(q.descricao_figura)}</div></figure>`:"")
+    + `<div class="en">${esc(q.enunciado||"")}</div>`;
 }
 function bqResponder(id, letra){
   const q=BQ.find(x=>x.id===id); if(!q) return;
@@ -295,7 +306,7 @@ function bqGemini(id){
   const alts=(q.alternativas||[]).map(a=>`${a.letra}) ${a.texto}`).join("\n");
   const gabTxt = q.gabarito===null ? "Esta questão foi anulada." : `O gabarito oficial é a alternativa ${q.gabarito}.`;
   const prompt = `Me ajude com esta questão de ${q.exame} ${q.ano} (${bqDiscNome(q)}${q.assunto?` — ${q.assunto}`:""}).\n\n`
-    + (q.contexto?`Contexto: ${q.contexto}\n\n`:"")
+    + (q.contexto?`Resumo do texto-base (não é o texto original da prova): ${q.contexto}\n\n`:"")
     + `${q.enunciado}\n\n${alts}\n\n`
     + (q.descricao_figura?`[Descrição da figura/gráfico que acompanha a questão: ${q.descricao_figura}]\n\n`:"")
     + `${gabTxt} Explique por que essa é a resposta correta, o conteúdo envolvido e por que as outras alternativas estão erradas.`;

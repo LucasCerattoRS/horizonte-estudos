@@ -20,6 +20,7 @@ python3 pipeline/gerar_frequencia.py     # frequencia-data.js (incidência "o qu
 ## Aquisição / importação (rodadas pontuais)
 ```bash
 python3 pipeline/baixar_provas_enem.py   # baixa provas ENEM do INEP (download.inep.gov.br)
+python3 pipeline/recortar_questoes_enem.py # painel/provas/enem/*.webp + provas-img-data.js (recorte de cada questão do caderno azul, issue #8)
 python3 pipeline/importar_redacoes.py    # importa o corpus de redações (gitignored, só-Linux)
 python3 pipeline/transcrever_cartilhas.py# transcreve cartilhas de redação para o painel
 ```

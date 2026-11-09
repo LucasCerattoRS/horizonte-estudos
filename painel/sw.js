@@ -12,14 +12,20 @@
    3. Navegação (abrir o app) → rede primeiro (pra pegar versão nova e o
       redirect do Cloudflare Access quando a sessão expira), caindo pro
       index.html do cache quando não há rede. É assim que o app abre offline.
-   4. Resto (app.js, *-data.js, ícones, PDFs de prova) → cache primeiro,
+   4. Imagens das questões (provas/…webp, ~60 KB cada, ~100 MB no total) →
+      cache próprio, cache primeiro SEM revalidar e com teto de entradas. Não
+      entram no install nem no aquecer(): só ficam as que o aluno já abriu.
+   5. Resto (app.js, *-data.js, ícones, PDFs de prova) → cache primeiro,
       revalidando por baixo (stale-while-revalidate). É o que faz a 2ª
       abertura ser instantânea mesmo com os 4,4 MB do banco de questões.
 
    Trocar de versão: suba CACHE_V. O SW novo assume na hora (skipWaiting +
-   clients.claim) e apaga os caches antigos.
+   clients.claim) e apaga os caches antigos — menos o das imagens, que tem
+   versão própria (CACHE_PROVAS): suba-o só quando os recortes forem refeitos.
    ============================================================ */
-const CACHE_V = "horizonte-v35";
+const CACHE_V = "horizonte-v36";
+const CACHE_PROVAS = "horizonte-provas-v1";
+const TETO_PROVAS = 400;   // ~25 MB no aparelho; passou disso, saem as mais antigas
 
 /* Shell mínimo — o que precisa existir pro app abrir sem rede. Os arquivos de
    dados grandes NÃO entram aqui (senão a instalação baixaria 5,8 MB antes de o app
@@ -70,6 +76,7 @@ const DADOS = [
   "./recursos-data.js",
   "./leituras-data.js",
   "./banco-questoes-data.js",
+  "./provas-img-data.js",
   "./sync.js",
   // Os dois OPCIONAIS: o index.html carrega, mas eles podem não existir neste site
   // (perfil-seed.js só no da Bia; redacoes-corpus.js é do Alex e nunca é publicado).
@@ -108,7 +115,7 @@ self.addEventListener("install", e => {
 self.addEventListener("activate", e => {
   e.waitUntil((async () => {
     const nomes = await caches.keys();
-    await Promise.all(nomes.filter(n => n !== CACHE_V).map(n => caches.delete(n)));
+    await Promise.all(nomes.filter(n => n !== CACHE_V && n !== CACHE_PROVAS).map(n => caches.delete(n)));
     await self.clients.claim();   // controla a página primeiro…
     await aquecer();              // …e só então baixa o conteúdo (waitUntil segura o SW vivo)
   })());
@@ -141,7 +148,28 @@ self.addEventListener("fetch", e => {
     return;
   }
 
-  // regra 4: recursos — cache primeiro, revalidando por baixo
+  // regra 4: imagem de questão — não muda depois de publicada, então nem revalida
+  if (url.pathname.includes("/provas/") && url.pathname.endsWith(".webp")) {
+    e.respondWith((async () => {
+      const c = await caches.open(CACHE_PROVAS);
+      const hit = await c.match(req);
+      if (hit) return hit;
+      try {
+        const res = await fetch(req);
+        if (cacheavel(res)) {
+          await c.put(req, res.clone());
+          const ks = await c.keys();   // em ordem de inserção: as primeiras são as mais antigas
+          await Promise.all(ks.slice(0, Math.max(0, ks.length - TETO_PROVAS)).map(k => c.delete(k)));
+        }
+        return res;
+      } catch {
+        return new Response("", { status: 504 });
+      }
+    })());
+    return;
+  }
+
+  // regra 5: recursos — cache primeiro, revalidando por baixo
   e.respondWith((async () => {
     const c = await caches.open(CACHE_V);
     const hit = await c.match(req);
