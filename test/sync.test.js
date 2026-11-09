@@ -229,3 +229,16 @@ test("pull: ts da seção nunca passa do teto da API (senão ela recusa o PUT in
   await A.pull({ sessions: sec([], perto) });
   assert.ok(A.run("JSON.parse(localStorage.getItem('painelUFRGS_ts')).sessions") <= Date.now() + 300000);
 });
+
+test("push: com o servidor quase no teto de relógio, nenhuma seção sobe com ts acima do que a API aceita", async () => {
+  const A = ambiente({ sessions: [{ id: "a1", date: "2026-11-09", min: 30 }] });
+  let corpo = null;
+  A.setFetch(async (u, o = {}) => {
+    if (o.method === "PUT") { corpo = JSON.parse(o.body); return { ok: true, status: 200, json: async () => ({ profile: { id: "p", nome: "P" }, sections: {} }) }; }
+    return { ok: true, status: 200, json: async () => ({ profile: { id: "p", nome: "P" }, sections: { sessions: { data: [], updated_at: Date.now() + 300000 } } }) };
+  });
+  await A.run("Sync.pull()"); await new Promise(r => setImmediate(r)); await A.run("Sync.push()");
+  const teto = Date.now() + 300000;
+  assert.ok(corpo, "houve PUT");
+  for (const [k, v] of Object.entries(corpo.sections)) assert.ok(v.updated_at <= teto, `${k} dentro do teto da API`);
+});

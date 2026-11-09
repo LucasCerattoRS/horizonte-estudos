@@ -74,7 +74,9 @@
   function setTs(m) { try { localStorage.setItem(TS_KEY, JSON.stringify(m)); } catch (e) {} }
   function snap() { if (typeof S === "undefined") return; SECOES.forEach(s => { shadow[s] = JSON.stringify(S[s]); }); }
   // updated_at estritamente crescente por aparelho: resolve empates de ms e corridas login-push↔mutação.
-  function nextTs() { lastTs = Math.max(Date.now(), lastTs + 1, ...Object.values(tsMap()).map(t => t + 1)); return lastTs; }
+  // Teto = o da API (agora + 5 min): acima dele ela recusa o PUT INTEIRO. Só encosta nele se OUTRO aparelho estiver
+  // com o relógio ~5 min adiantado; aí a seção empata e é ignorada, em vez de derrubar o envio de todas as outras.
+  function nextTs() { lastTs = Math.min(Math.max(Date.now(), lastTs + 1, ...Object.values(tsMap()).map(t => t + 1)), maxTs()); return lastTs; }
 
   // Merge de uma seção remota sobre a local.
   //  - arrays cujos itens têm id → união por id (não perde progresso do outro aparelho);
@@ -164,7 +166,7 @@
           if (tsAntes === undefined || rts > tsAntes) ts[secao] = rts;
           // o aparelho tem sessão (ou minutos) que o servidor não tem: ts novo para o push ser aceito (a API só
           // grava timestamp maior) e reenvio garantido. Teto = o da API (agora + 5 min): acima dele ela recusa o PUT INTEIRO.
-          if (depois !== chaveDe(remoto)) { ts[secao] = Math.min(nextTs(), maxTs()); reenviar = true; }
+          if (depois !== chaveDe(remoto)) { ts[secao] = nextTs(); reenviar = true; }
           if (depois !== antes || tsAntes === undefined || rts > tsAntes) mudou = true;
           continue;
         }
