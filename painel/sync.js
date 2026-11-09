@@ -28,6 +28,7 @@
   let onlineHooked = false;
   let lastTs = 0;         // relógio lógico monotônico: nenhum push repete/inverte um updated_at
   let lastMetaStr = null; // V2.1: última meta (perfil-presente) aplicada, p/ evitar re-render à toa
+  const pendentes = new Set();   // seções cujo PUT empatou com o servidor (relógio no teto): reenviar com ts maior
   let sessao = 0;         // invalida respostas pendentes ao desconectar ou trocar login
 
   const httpBase = (location.protocol === "http:" || location.protocol === "https:") ? "/api" : null;
@@ -190,7 +191,7 @@
     const ts = tsMap(), sections = {};
     SECOES.forEach(secao => {
       if (S[secao] === undefined) return;
-      if (ts[secao] === undefined) ts[secao] = nextTs();   // fixa um ts estável p/ a seção (1ª subida)
+      if (ts[secao] === undefined || pendentes.delete(secao)) ts[secao] = nextTs();   // fixa um ts estável p/ a seção (1ª subida) ou renova o que empatou
       sections[secao] = { data: S[secao], updated_at: ts[secao] };
     });
     setTs(ts);                                             // persiste: próximos pushes de seção intocada = no-op no servidor
@@ -206,9 +207,16 @@
       const j = await r.json();                          // estado mesclado do servidor
       if (origem !== sessao || token !== Sync.token) return;
       if (j && j.profile) { Sync.profile = j.profile; applyMeta(j.profile.meta); }
+      // Empate no teto de relógio: a API ignora ts <= o dela e a resposta empatada também é ignorada aqui, então a edição
+      // ficaria só neste aparelho. Marca a seção como pendente e tenta de novo, com ts renovado, quando o relógio andar.
+      let empatou = false;
+      Object.keys(sections).forEach(k => {
+        const r = j && j.sections && j.sections[k];
+        if (r && Number(r.updated_at) === sections[k].updated_at && JSON.stringify(r.data) !== JSON.stringify(sections[k].data)) { pendentes.add(k); empatou = true; }
+      });
       const reenviar = applyRemote(j && j.sections);     // converge com o que outro aparelho já subiu
       status("ok");
-      if (reenviar) { clearTimeout(pushTimer); pushTimer = setTimeout(() => Sync.push(), DEBOUNCE); }   // havia sessão só aqui: sobe a união
+      if (reenviar || empatou) { clearTimeout(pushTimer); pushTimer = setTimeout(() => Sync.push(), empatou ? 30000 : DEBOUNCE); }   // havia sessão só aqui: sobe a união
     } catch (e) {
       if (origem !== sessao || token !== Sync.token) return;
       status("off"); hookOnline();

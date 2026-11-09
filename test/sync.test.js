@@ -242,3 +242,19 @@ test("push: com o servidor quase no teto de relógio, nenhuma seção sobe com t
   assert.ok(corpo, "houve PUT");
   for (const [k, v] of Object.entries(corpo.sections)) assert.ok(v.updated_at <= teto, `${k} dentro do teto da API`);
 });
+
+test("push: edição que empata com o servidor no teto de relógio fica pendente e é reenviada, não descartada", async () => {
+  const A = ambiente({ topics: { t1: { status: 1 } } });
+  const teto = Date.now() + 300000;
+  const puts = [];
+  A.setFetch(async (u, o = {}) => {
+    if (o.method === "PUT") { puts.push(JSON.parse(o.body)); return { ok: true, status: 200, json: async () => ({ profile: { id: "p", nome: "P" }, sections: { topics: { data: { velho: { status: 0 } }, updated_at: puts[puts.length - 1].sections.topics.updated_at } } }) }; }
+    return { ok: true, status: 200, json: async () => ({ profile: { id: "p", nome: "P" }, sections: {} }) };
+  });
+  A.run("window.__agendado = []; setTimeout = (f, ms) => { window.__agendado.push(ms); return 1; }");
+  await A.run("Sync.push()"); await new Promise(r => setImmediate(r));
+  assert.ok(A.run("window.__agendado").includes(30000), "reenvio agendado");
+  assert.deepStrictEqual(A.S().topics, { t1: { status: 1 } }, "a edição local não foi sobrescrita");
+  await A.run("Sync.push()");
+  assert.strictEqual(puts.length, 2, "a seção volta a ser enviada");
+});
