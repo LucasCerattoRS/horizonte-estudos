@@ -22,6 +22,7 @@ painel pessoal de estudo.
 | `pipeline/verificar/` | Probes headless (CDP) que validam o painel: offline, largura, visual |
 | `infra/schema.sql` | Schema do banco D1 (perfis, estado, sync) |
 | `docs/estudo/` | **Material didático completo**: cada arquivo do código explicado linha a linha |
+| `docs/provas/enem-2026-dia1-verde/` | Caderno verde do 1º dia em PDF de estudo, uma questão por folha, e tabela para conferir a ordem |
 
 ## Destaques de arquitetura
 
