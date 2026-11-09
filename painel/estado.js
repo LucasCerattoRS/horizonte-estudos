@@ -43,7 +43,7 @@
       if (m === null) return [];
       let r = m === x.min ? x : { ...x, min: m };
       if (typeof r.id !== "string" || !r.id) {
-        const base = [r.date, r.min, [r.disc, ...(Array.isArray(r.discs) ? r.discs : [])].filter(Boolean).join("+")].join("|");
+        const base = [r.date, r.min, [...new Set([r.disc, ...(Array.isArray(r.discs) ? r.discs : [])].filter(d => typeof d === "string" && d))].sort().join("+")].join("|");
         const n = vistas[base] = (vistas[base] ?? -1) + 1;
         r = { ...r, id: `${base}|${n}` };
       }

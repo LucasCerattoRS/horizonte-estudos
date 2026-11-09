@@ -137,3 +137,10 @@ test("sessões antigas ganham id determinístico: mesmo histórico → mesmos id
   assert.strictEqual(new Set(a.map(x => x.id)).size, 3);
   assert.deepStrictEqual(normalizaEstado({ sessions: a }, PADRAO, CURSOS).sessions, a);   // idempotente
 });
+
+test("id legado: ordem e repetição de discs não mudam o id (a mesma sessão não duplica na união)", () => {
+  const id = x => normalizaEstado({ sessions: [x] }, PADRAO, CURSOS).sessions[0].id;
+  const base = { date: "2026-11-09", min: 60 };
+  assert.strictEqual(id({ ...base, disc: "fil", discs: ["fil", "soc"] }), id({ ...base, disc: "soc", discs: ["soc", "fil"] }));
+  assert.notStrictEqual(id({ ...base, disc: "fil" }), id({ ...base, disc: "soc" }));
+});

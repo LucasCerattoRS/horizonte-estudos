@@ -159,3 +159,60 @@ test("pull: sessões antigas sem id dos dois aparelhos se UNEM em vez de a remot
   assert.strictEqual(total, 30 + 45 + 20);
   assert.strictEqual(S.sessions.length, 3);                                                     // a comum não duplica
 });
+
+/* ---- dois aparelhos contra um servidor falso com a MESMA regra da API (grava só updated_at maior) ---- */
+function servidor() {
+  const secoes = {};
+  return async (url, opt = {}) => {
+    if (opt.method === "PUT") {
+      const { sections } = JSON.parse(opt.body);
+      for (const [k, v] of Object.entries(sections)) if (!secoes[k] || v.updated_at > secoes[k].updated_at) secoes[k] = JSON.parse(JSON.stringify(v));
+    }
+    return { ok: true, status: 200, json: async () => ({ profile: { id: "p", nome: "P" }, sections: JSON.parse(JSON.stringify(secoes)) }) };
+  };
+}
+const tick = () => new Promise(r => setImmediate(r));
+async function ciclo(amb) { await amb.run("Sync.pull()"); await tick(); await amb.run("Sync.push()"); await tick(); }
+const min = amb => amb.S().sessions.reduce((a, x) => a + x.min, 0);
+const registra = (amb, id, m) => amb.run(`S.sessions.push({ id: "${id}", date: "2026-11-09", min: ${m}, disc: "mat" }); Sync.onSaved();`);
+
+test("dois aparelhos: sessões registradas offline nos dois convergem sem perder minutos", async () => {
+  const srv = servidor(), A = ambiente({}), B = ambiente({});
+  A.setFetch(srv); B.setFetch(srv);
+  await ciclo(A); await ciclo(B);
+  registra(A, "a1", 30); registra(B, "b1", 45);            // nenhum viu o outro
+  await ciclo(B);                                           // B sobe primeiro (ts maior)
+  await ciclo(A);                                           // A recebe [b1], tem a1 a mais → sobe a união
+  await ciclo(B);
+  await ciclo(A);
+  assert.strictEqual(min(A), 75); assert.strictEqual(min(B), 75);
+  assert.deepStrictEqual(A.S().sessions.map(x => x.id).sort(), ["a1", "b1"]);
+  assert.deepStrictEqual(B.S().sessions.map(x => x.id).sort(), ["a1", "b1"]);
+  const C = ambiente({}); C.setFetch(srv); await ciclo(C);   // aparelho novo recebe tudo do servidor
+  assert.strictEqual(min(C), 75);
+});
+
+test("pull: lista remota vazia e mais nova não apaga as sessões locais — e o servidor as recebe de volta", async () => {
+  const srv = servidor(), A = ambiente({ sessions: [{ id: "a1", date: "2026-11-09", min: 30 }] });
+  A.setFetch(async (u, o) => { const r = await srv(u, o); const j = await r.json(); return { ...r, json: async () => ({ ...j, sections: { ...j.sections, sessions: { data: [], updated_at: Date.now() + 1000 } } }) }; });
+  await A.run("Sync.pull()"); await tick();
+  assert.strictEqual(min(A), 30);
+  assert.ok(A.run("JSON.parse(localStorage.getItem('painelUFRGS_ts')).sessions") > Date.now() + 1000, "ts novo maior que o remoto, senão a API recusa o push");
+});
+
+test("pull: timestamp local maior que o remoto ainda traz as sessões que só existem no servidor", async () => {
+  const srv = servidor(), A = ambiente({}), B = ambiente({});
+  A.setFetch(srv); B.setFetch(srv);
+  registra(B, "b1", 45); await ciclo(B);                     // servidor: [b1]
+  registra(A, "a1", 30);                                      // ts local de A é MAIOR que o do servidor
+  await ciclo(A);
+  assert.strictEqual(min(A), 75);
+  await ciclo(B);
+  assert.strictEqual(min(B), 75);
+});
+
+test("pull: sessões remotas inválidas (null/texto) nunca apagam as locais", async () => {
+  const A = ambiente({ sessions: [{ id: "a1", date: "2026-11-09", min: 30 }] });
+  await A.pull({ sessions: sec(null) }); await A.pull({ sessions: sec("lixo") });
+  assert.strictEqual(min(A), 30);
+});

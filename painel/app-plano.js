@@ -155,11 +155,21 @@ function renderWeek(){
   });
   $("#weekTotal").textContent=`${Math.floor(weekTotal/60)}h${weekTotal%60}min nos últimos 7 dias · ${weekTotal} min`;
 }
+/* id de sessão nova: UUID quando existe; senão hora + aleatório. Nunca repete um id já usado neste aparelho. */
+function novoIdSessao(){
+  const usados=new Set(S.sessions.map(x=>x.id));
+  for(let i=0;i<5;i++){
+    const id=(typeof crypto!=="undefined" && crypto.randomUUID) ? "s"+crypto.randomUUID()
+      : "s"+Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+    if(!usados.has(id)) return id;
+  }
+  return "s"+Date.now().toString(36)+usados.size;
+}
 function logSession(){
   const disc=$("#logDisc").value;
   const min=parseMin($("#logMin").value);
   if(min==null){ $("#logMin").focus(); return; }   // vazio, texto, "1e3" ou > 24h: não grava lixo nem 1 minuto em silêncio
-  S.sessions.push({id:"s"+Date.now().toString(36)+Math.random().toString(36).slice(2,6), date:todayKey(), min, disc});
+  S.sessions.push({id:novoIdSessao(), date:todayKey(), min, disc});
   save(); renderRevisao(); renderPainel();
 }
 

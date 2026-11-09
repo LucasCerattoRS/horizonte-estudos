@@ -81,12 +81,6 @@
   //  - o resto (topics/bancoResp/rascunhos map, curso string) → substitui (last-write-wins por seção).
   function mergeSecao(secao, remoto) {
     if (typeof S === "undefined" || remoto === undefined) return;
-    // sessões antigas não têm id: dá id (mesmo critério do estado.js) dos dois lados antes de unir,
-    // senão cairia no "substitui tudo" e apagaria minutos registrados no outro aparelho.
-    if (secao === "sessions" && Array.isArray(remoto) && typeof normalizaSessoes === "function") {
-      remoto = normalizaSessoes(remoto);
-      if (Array.isArray(S.sessions)) S.sessions = normalizaSessoes(S.sessions);
-    }
     const local = S[secao];
     if (Array.isArray(remoto) && Array.isArray(local) && remoto.length && remoto.every(x => x && x.id)) {
       const byId = new Map(local.filter(x => x && x.id).map(x => [x.id, x]));
@@ -95,6 +89,16 @@
     } else {
       S[secao] = remoto;
     }
+  }
+
+  // Sessões: SEMPRE união por id (nunca substitui), em qualquer ordem de timestamps e com lista remota
+  // vazia ou velha. A união é idempotente e comutativa, então pull/push repetidos convergem.
+  const idsDe = l => (Array.isArray(l) ? l.map(x => x.id).sort().join("\n") : "");
+  function uneSessoes(local, remoto) {
+    const porId = new Map();
+    normalizaSessoes(local).forEach(x => porId.set(x.id, x));
+    remoto.forEach(x => porId.set(x.id, x));        // mesmo id = mesma sessão; vence o remoto
+    return [...porId.values()];
   }
 
   // V2.1: aplica o perfil-presente vindo do D1 (dedicatória, mensagens/pools) SOBRE o PERFIL_SEED do arquivo.
@@ -139,8 +143,8 @@
 
   // Aplica seções vindas do servidor (pull OU resposta do PUT). Só troca seção cujo ts remoto é maior.
   function applyRemote(sections) {
-    if (!sections) return;
-    const ts = tsMap(); let mudou = false;
+    if (!sections) return false;
+    const ts = tsMap(); let mudou = false, reenviar = false;
     Sync._applying = true;
     try {
       for (const [secao, sv] of Object.entries(sections)) {
@@ -149,6 +153,19 @@
         const rts = Number(sv.updated_at);
         if (!Number.isSafeInteger(rts) || rts <= 0 || rts > maxTs()) continue;
         if (rts > lastTs) lastTs = rts;               // acompanha o relógio do outro aparelho (evita clock-skew perder update)
+        if (secao === "sessions") {
+          if (!Array.isArray(sv.data) || typeof normalizaSessoes !== "function") continue;   // remoto ruim nunca apaga o local
+          const remoto = normalizaSessoes(sv.data), antes = idsDe(normalizaSessoes(S.sessions));
+          S.sessions = uneSessoes(S.sessions, remoto);
+          const depois = idsDe(S.sessions);
+          const tsAntes = ts[secao];
+          if (tsAntes === undefined || rts > tsAntes) ts[secao] = rts;
+          // o aparelho tem sessões que o servidor não tem: ts novo (> rts) para o push ser aceito
+          // (a API só grava timestamp maior) e reenvio garantido.
+          if (depois !== idsDe(remoto)) { ts[secao] = nextTs(); reenviar = true; }
+          if (depois !== antes || tsAntes === undefined || rts > tsAntes) mudou = true;
+          continue;
+        }
         if (!(secao in ts) || rts > ts[secao]) { mergeSecao(secao, sv.data); ts[secao] = rts; mudou = true; }
       }
       // o remoto passa pela MESMA sanitização do localStorage (estado.js): sessions null, curso
@@ -160,6 +177,7 @@
     } finally { Sync._applying = false; }
     snap();                                             // baseline = estado já mesclado
     if (mudou) reRender();
+    return reenviar;
   }
 
   Sync.push = async function () {
@@ -184,8 +202,9 @@
       const j = await r.json();                          // estado mesclado do servidor
       if (origem !== sessao || token !== Sync.token) return;
       if (j && j.profile) { Sync.profile = j.profile; applyMeta(j.profile.meta); }
-      applyRemote(j && j.sections);                      // converge com o que outro aparelho já subiu
+      const reenviar = applyRemote(j && j.sections);     // converge com o que outro aparelho já subiu
       status("ok");
+      if (reenviar) { clearTimeout(pushTimer); pushTimer = setTimeout(() => Sync.push(), DEBOUNCE); }   // havia sessão só aqui: sobe a união
     } catch (e) {
       if (origem !== sessao || token !== Sync.token) return;
       status("off"); hookOnline();
