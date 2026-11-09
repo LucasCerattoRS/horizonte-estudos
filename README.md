@@ -22,6 +22,7 @@ painel pessoal de estudo.
 | `pipeline/verificar/` | Probes headless (CDP) que validam o painel: offline, largura, visual |
 | `infra/schema.sql` | Schema do banco D1 (perfis, estado, sync) |
 | `docs/estudo/` | **Material didático completo**: cada arquivo do código explicado linha a linha |
+| `docs/plano-estudos/` | Planos de estudo para provas próximas, com exercícios do banco por bloco (ex.: ENEM 2026, 2º dia) |
 
 ## Destaques de arquitetura
 
